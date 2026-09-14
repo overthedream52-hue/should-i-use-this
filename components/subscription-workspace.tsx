@@ -1,8 +1,8 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import SubscriptionResult from './subscription-result';
-import type { PreparedTransfer, TransferView } from '../lib/subscription-transfer';
+import { importTransfer, prepareTransfer, type PreparedTransfer, type TransferView } from '../lib/subscription-transfer';
 
 type Fields = { tool: string; source: string; situation: string };
 type Example = Fields & { label: string; url: string };
@@ -17,31 +17,32 @@ export default function SubscriptionWorkspace({ example }: { example: Example })
   const [message, setMessage] = useState('');
   const [isExample, setIsExample] = useState(false);
   const generation = useRef(0);
-  const pending = useRef<AbortController | null>(null);
   const result = useRef<HTMLElement | null>(null);
-  useEffect(() => () => { generation.current++; pending.current?.abort(); }, []);
   function invalidate() {
-    generation.current++; pending.current?.abort(); setBusy(false);
+    generation.current++; setBusy(false);
     setPrepared(null); setConsent(false); setReply(''); setView(null); setMessage('');
   }
   function edit(key: keyof Fields, value: string) { invalidate(); setIsExample(false); setFields(f => ({ ...f, [key]: value })); }
-  async function send(action: 'prepare' | 'import') {
+  function send(action: 'prepare' | 'import') {
     if (busy) return;
     const current = ++generation.current;
-    const controller = new AbortController(); pending.current = controller;
     setBusy(true); setMessage(''); setView(null);
-    const timer = setTimeout(() => controller.abort(), 15000);
     try {
-      const response = await fetch('/api/subscription', { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: controller.signal,
-        body: JSON.stringify(action === 'prepare' ? { action, ...fields } : { action, input: prepared?.input, reply }) });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error || '처리하지 못했습니다.');
-      if (current !== generation.current) return;
-      if (action === 'prepare') { setPrepared(body); setConsent(false); setReply(''); }
-      else { setView(body.view); requestAnimationFrame(() => result.current?.focus()); }
-    } catch (error) {
-      if (current === generation.current) setMessage(controller.signal.aborted ? '연결이 지연되었습니다. 입력은 유지되니 다시 시도해 주세요.' : error instanceof Error ? error.message : '앱 연결을 확인해 주세요.');
-    } finally { clearTimeout(timer); if (current === generation.current) setBusy(false); }
+      if (action === 'prepare') {
+        const body = prepareTransfer(fields);
+        if (current !== generation.current) return;
+        setPrepared(body); setConsent(false); setReply('');
+      } else {
+        if (!prepared) throw new Error('missing prepared input');
+        const body = importTransfer(prepared.input, reply);
+        if (current !== generation.current) return;
+        setView(body.view); requestAnimationFrame(() => result.current?.focus());
+      }
+    } catch {
+      if (current === generation.current) setMessage(action === 'import'
+        ? '이 분석의 답변인지 확인해 주세요. AI가 반환한 JSON 전체를 붙여넣어야 하며, 입력과 근거가 일치해야 합니다.'
+        : '문서의 길이와 형식을 확인해 주세요. 하나의 완전한 공개 문서로 다시 시도해 주세요.');
+    } finally { if (current === generation.current) setBusy(false); }
   }
   async function copy() {
     if (!prepared || !consent) return;
@@ -61,11 +62,11 @@ export default function SubscriptionWorkspace({ example }: { example: Example })
     <section className="transfer-card" aria-labelledby="prepare-title">
       <h2 id="prepare-title"><span>1</span> 분석할 자료 준비</h2>
       {isExample && <p className="transfer-note">{example.label} · <a href={example.url} target="_blank" rel="noreferrer">출처 보기</a><br />본인의 상황을 분석한 결과는 아닙니다.</p>}
-      <form onSubmit={e => { e.preventDefault(); void send('prepare'); }}>
+      <form onSubmit={e => { e.preventDefault(); send('prepare'); }}>
         <label>도구 이름<input required maxLength={200} value={fields.tool} onChange={e => edit('tool', e.target.value)} placeholder="예: Flowise Cloud" /></label>
         <label>내 상황 한 줄 <small>선택</small><textarea rows={2} maxLength={4000} value={fields.situation} onChange={e => edit('situation', e.target.value)} placeholder="지금 하는 일과 줄이고 싶은 불편을 적어 주세요." /></label>
         <label>공개 설명 문서<textarea required rows={5} maxLength={32000} value={fields.source} onChange={e => edit('source', e.target.value)} placeholder="도구의 설명 문서를 붙여넣으세요. 제목·표·조건도 함께 넣어 주세요." /></label>
-        <p className="transfer-note">공개 자료만 넣어 주세요. 비밀번호·비밀키·보안 문서·개인정보는 제외하세요. 입력한 공개 문서와 상황은 이 웹 앱의 서버로 전송되어 분석 요청 생성과 답변 검사에만 사용됩니다. 앱은 계정이나 데이터베이스에 저장하지 않으며 AI 서비스로 자동 전송하지 않습니다.</p>
+        <p className="transfer-note">공개 자료만 넣어 주세요. 비밀번호·비밀키·보안 문서·개인정보는 제외하세요. 분석 요청 생성과 답변 검사는 이 브라우저에서 처리되며 서버나 AI 서비스로 자동 전송하지 않습니다.</p>
         <button className="transfer-primary" disabled={busy}>{busy ? '처리 중…' : '분석 자료 준비'}</button>
       </form>
     </section>
@@ -80,8 +81,8 @@ export default function SubscriptionWorkspace({ example }: { example: Example })
       <section className="transfer-card" aria-labelledby="import-title">
         <h2 id="import-title"><span>3</span> AI 답변 가져오기</h2>
         <p>AI가 반환한 답변 전체를 아래에 붙여넣으세요.</p>
-        <textarea aria-label="AI 답변" rows={6} maxLength={64000} value={reply} onChange={e => { generation.current++; pending.current?.abort(); setBusy(false); setReply(e.target.value); setView(null); setMessage(''); }} placeholder="AI의 JSON 답변을 그대로 붙여넣으세요." />
-        <button className="transfer-primary" disabled={busy || !reply.trim()} onClick={() => void send('import')}>답변과 근거 확인</button>
+        <textarea aria-label="AI 답변" rows={6} maxLength={64000} value={reply} onChange={e => { generation.current++; setBusy(false); setReply(e.target.value); setView(null); setMessage(''); }} placeholder="AI의 JSON 답변을 그대로 붙여넣으세요." />
+        <button className="transfer-primary" disabled={busy || !reply.trim()} onClick={() => send('import')}>답변과 근거 확인</button>
       </section>
     </>}
     <p role="status" aria-live="polite" className="transfer-message">{message}</p>

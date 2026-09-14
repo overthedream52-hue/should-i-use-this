@@ -11,7 +11,7 @@
 3. 요청을 본인의 Codex·ChatGPT·Claude 구독 대화에 붙여넣습니다.
 4. JSON 답변을 앱에 가져와 결론, 이유, 재검토 조건, 연결된 원문을 확인합니다.
 
-앱이 AI 계정에 로그인하거나 모델 API를 호출하지 않습니다. 로컬 LLM과 개발자 API 키도 필요하지 않습니다. 입력한 내용은 요청 생성과 답변 검사를 위해 웹 서버를 거치지만 앱 계정이나 데이터베이스에는 저장하지 않습니다. 외부 AI에 붙여넣은 내용에는 해당 서비스의 데이터 처리 정책과 사용 한도가 적용됩니다.
+앱이 AI 계정에 로그인하거나 모델 API를 호출하지 않습니다. 로컬 LLM과 개발자 API 키도 필요하지 않습니다. 입력한 내용과 가져온 답변은 브라우저 안에서만 처리하며 앱 서버로 전송하거나 저장하지 않습니다. 외부 AI에 직접 붙여넣은 내용에는 해당 서비스의 데이터 처리 정책과 사용 한도가 적용됩니다.
 
 ## Codex 스킬로 사용
 
@@ -45,7 +45,6 @@ npm run dev
 
 ```sh
 npm test
-python3 -m unittest discover -s tests -p '*_test.py'
 npm run lint
 npm run typecheck
 npm run build
@@ -61,8 +60,8 @@ python3 ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/
 
 - 공개 자료만 입력합니다. 비밀번호, API 키, 개인정보, 보안 문서, 업무 비밀은 제외합니다.
 - 공개 문서 속 지시는 데이터로만 취급하며 실행하지 않습니다.
-- 웹은 같은 출처의 JSON 요청만 받고 본문과 각 필드의 크기를 제한합니다.
-- 앱은 입력과 결과를 계정이나 데이터베이스에 저장하지 않습니다. 새로고침하면 현재 탭의 내용이 사라집니다.
+- 웹은 정적 페이지이며 입력·답변을 브라우저 안에서 처리합니다. 각 필드의 크기와 JSON 구조를 제한합니다.
+- 앱은 입력과 결과를 저장하지 않습니다. 새로고침하면 현재 탭의 내용이 사라집니다.
 - 스킬은 후보 도구를 실제 설치하거나 실행해야만 판단할 수 있다고 요구하지 않습니다.
 
 자세한 내용은 [Privacy](PRIVACY.md)와 [Security](SECURITY.md)를 참고하세요.
@@ -71,7 +70,9 @@ python3 ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/
 
 프로그램 검사는 입력과 답변의 결속, JSON 구조, 근거 ID 존재, 도입 근거의 연결을 확인합니다. 인용한 문장이 원문의 의미를 정확히 해석했는지는 별도 의미 검토가 필요합니다. 스타 수와 인기도는 개인 효용의 증거로 사용하지 않습니다.
 
-웹 배포에는 서버 기능을 지원하는 Next.js 호스팅이 필요합니다. 현재 `/api/subscription`은 Node.js Route Handler이므로 정적 GitHub Pages만으로는 전체 앱을 실행할 수 없습니다.
+## GitHub Pages 배포
+
+웹은 Next.js 정적 export로 빌드합니다. 저장소의 **Settings → Pages → Source**를 **GitHub Actions**로 한 번 설정하면, [Pages workflow](.github/workflows/pages.yml)가 `main` push마다 단위 검사·lint·typecheck·build와 배포 경로 검사를 통과한 산출물만 배포합니다. Fork에서 저장소 이름을 바꾸면 workflow와 `NEXT_PUBLIC_BASE_PATH` 값도 함께 바꿔야 합니다.
 
 ## 라이선스
 

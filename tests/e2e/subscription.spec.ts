@@ -2,11 +2,10 @@ import { test, expect } from '@playwright/test';
 test('subscription roundtrip preserves original evidence and clears stale result', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: '공개 예시로 시작' }).click();
-  const response = page.waitForResponse(r => r.url().endsWith('/api/subscription'));
   await page.getByRole('button', { name: '분석 자료 준비', exact: true }).click();
-  const prepared = await (await response).json();
   await expect(page.getByRole('button', { name: '분석 요청 복사' })).toBeDisabled();
-  const packet = JSON.parse(prepared.prompt.split('분석 자료:\n')[1]);
+  const prompt = await page.getByLabel('전송 내용').inputValue();
+  const packet = JSON.parse(prompt.split('분석 자료:\n')[1]);
   const answer = { id: packet.id, inputHash: packet.inputHash, decision: 'consider', facts: [{ id: 'cloud', category: 'feature', statement: '문서는 서버 운영 경험이 없는 웹앱 사용자에게 Cloud를 권장한다.', spanIds: ['S2'] }], userFacts: [{ id: 'user', statement: '서버 관리 경험이 없다.', spanIds: ['U1'] }], judgments: [{ statement: 'Cloud를 검토할 가치가 있다.', factIds: ['cloud'], userFactIds: ['user'] }], burdenFactIds: [], unknowns: [], questionCode: null };
   await page.getByRole('textbox', { name: 'AI 답변', exact: true }).fill(JSON.stringify(answer));
   await page.getByRole('button', { name: '답변과 근거 확인' }).click();
@@ -30,21 +29,12 @@ test('subscription roundtrip preserves original evidence and clears stale result
   await page.getByRole('button', { name: '입력과 결과 지우기' }).click();
   await expect(page.getByLabel('도구 이름')).toHaveValue('');
 });
-test('late preparation cannot restore cleared data', async ({ page }) => {
+test('editing an input clears prepared data and stale results', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: '공개 예시로 시작' }).click();
-  let release!: () => void;
-  const gate = new Promise<void>(resolve => { release = resolve; });
-  let delivered!: () => void; const delivery = new Promise<void>(resolve => { delivered = resolve; });
-  let entered!: () => void; const requestEntered = new Promise<void>(resolve => { entered = resolve; });
-  await page.route('**/api/subscription', async route => { const response = await route.fetch(); entered(); await gate; await route.fulfill({ response }); delivered(); });
   await page.getByRole('button', { name: '분석 자료 준비', exact: true }).click();
-  await requestEntered;
-  await page.getByRole('button', { name: '입력과 결과 지우기' }).click();
-  release();
-  await delivery;
-  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
-  await expect(page.getByLabel('도구 이름')).toHaveValue('');
+  await expect(page.getByRole('button', { name: '분석 요청 복사' })).toBeVisible();
+  await page.getByLabel('내 상황 한 줄', { exact: false }).fill('바뀐 상황');
   await expect(page.getByRole('button', { name: '분석 요청 복사' })).toHaveCount(0);
 });
 test('clipboard failure offers manual copy and no automatic AI request', async ({ page }) => {
@@ -57,5 +47,5 @@ test('clipboard failure offers manual copy and no automatic AI request', async (
   await page.getByRole('checkbox').check();
   await page.getByRole('button', { name: '분석 요청 복사' }).click();
   await expect(page.getByRole('status')).toContainText('직접 복사');
-  expect(apis).toEqual(['/api/subscription']);
+  expect(apis).toEqual([]);
 });

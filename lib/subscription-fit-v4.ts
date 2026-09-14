@@ -14,6 +14,7 @@ export function renderFitAnswerV4(raw: unknown, input: FitInputV3) {
   const current = typeof raw === 'object' && raw !== null && Object.hasOwn(raw, 'adoptionBasis');
   const parsed = current ? fitAnswerSchemaV4.parse(raw) : { ...fitAnswerSchemaV3.parse(raw), adoptionBasis: null };
   const { adoptionBasis, ...answer } = parsed;
+  if (answer.decision !== 'consider' && adoptionBasis) throw new Error('unexpected adoption basis');
   const view = renderFitAnswerV3(answer, input);
   if (adoptionBasis) {
     const need = answer.userFacts.find(f => f.id === adoptionBasis.needUserFactId);

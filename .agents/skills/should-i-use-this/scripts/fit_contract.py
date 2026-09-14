@@ -246,6 +246,8 @@ def validate_and_render(input_value: dict[str, str], raw_answer: Any) -> dict[st
         raise ContractError("invalid burden reference")
 
     adoption = answer["adoptionBasis"]
+    if answer["decision"] != "consider" and adoption is not None:
+        raise ContractError("unexpected adoption basis")
     if adoption is not None:
         need = next((item for item in answer["userFacts"] if item["id"] == adoption["needUserFactId"]), None)
         gap = next((item for item in answer["userFacts"] if item["id"] == adoption["gapUserFactId"]), None)

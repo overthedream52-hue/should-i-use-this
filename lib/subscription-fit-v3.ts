@@ -1,9 +1,9 @@
-import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { fitAnswerSchemaV2 } from './subscription-fit-v2';
 import { fitInstructions, renderFitQuestion } from './subscription-fit';
+import { sha256Hex } from './sha256';
 
-// Server/evaluation candidate. No browser import or app routing is added here.
+// Shared packet contract used by the browser flow and the portable skill tests.
 const inputSchema = z.strictObject({ id: z.string().min(1).max(128), source: z.string().max(32000), situation: z.string().max(4000), tool: z.string().max(200).optional(), answeredQuestions: z.array(z.string().max(32)).max(8).optional() });
 export type FitInputV3 = z.infer<typeof inputSchema>;
 export type SourceSpan = { id: string; start: number; end: number; text: string; contextIds: string[] };
@@ -45,7 +45,7 @@ export function buildFitPacket(value: FitInputV3) {
   const bound = { id: input.id, source: input.source, situation: input.situation, tool: input.tool ?? '', answeredQuestions: input.answeredQuestions ?? [] };
   return {
     id: input.id, tool: bound.tool, offsetUnit: 'utf16' as const,
-    inputHash: createHash('sha256').update(JSON.stringify(bound)).digest('hex'),
+    inputHash: sha256Hex(JSON.stringify(bound)),
     sourceSpans: sectionSpans(input.source),
     userSpans: input.situation.trim() ? [{ id: 'U1', start: 0, end: input.situation.length, text: input.situation, contextIds: [] } satisfies SourceSpan] : [],
     answeredQuestions: bound.answeredQuestions,

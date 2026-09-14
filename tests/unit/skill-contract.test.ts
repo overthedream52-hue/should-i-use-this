@@ -74,6 +74,8 @@ describe('portable skill contract', () => {
       { input: { ...input, source: `${input.source}changed` }, reply: JSON.stringify(answer) },
       { input, reply: JSON.stringify({ ...answer, facts: [{ ...answer.facts[0], spanIds: ['S999'] }] }) },
       { input, reply: JSON.stringify({ ...answer, judgments: [{ ...answer.judgments[0], userFactIds: ['need'] }] }) },
+      { input, reply: JSON.stringify({ ...answer, decision: 'hold' }) },
+      { input, reply: JSON.stringify({ ...answer, decision: 'skip' }) },
       { input, reply: JSON.stringify({ ...answer, unexpected: 'private-marker' }) },
     ];
     for (const value of cases) {

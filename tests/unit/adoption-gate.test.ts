@@ -49,6 +49,7 @@ describe('adoption gate', () => {
     expect(renderFitAnswerV4(candidate(), input).decision).toBe('consider');
     for (const decision of ['hold', 'skip']) {
       expect(renderFitAnswerV4({ ...candidate(), decision, adoptionBasis: null }, input).decision).toBe(decision);
+      expect(() => renderFitAnswerV4({ ...candidate(), decision }, input)).toThrow();
     }
     expect(renderFitAnswerV4({ ...candidate(), adoptionBasis: null }, input).decision).toBe('hold');
   });

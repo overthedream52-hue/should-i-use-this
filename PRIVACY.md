@@ -2,7 +2,7 @@
 
 Should I Use This has no user account or application database.
 
-The web app sends the public product text and optional situation entered by the user to its same-origin server only to create an analysis request or validate an imported answer. The application does not persist that body or call an AI model. Hosting infrastructure may process request metadata under the host's policy.
+The web app creates analysis requests and validates imported answers inside the browser. It has no application backend, account, database, analytics call, or model call. GitHub Pages may process ordinary page request metadata under GitHub's policy, but the text entered into the form is not sent to the host.
 
 The user decides whether to paste the generated request into Codex, ChatGPT, Claude, or another subscribed AI service. Material sent there is governed by that provider. Do not enter passwords, API keys, personal data, security documents, or confidential work material.
 
