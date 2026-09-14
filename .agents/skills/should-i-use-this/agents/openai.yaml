@@ -1,0 +1,4 @@
+interface:
+  display_name: "Should I Use This"
+  short_description: "도구를 설치하기 전에 내 업무 적합성을 근거로 판단"
+  default_prompt: "Use $should-i-use-this to decide whether this tool is worth adopting for my work before I install it."
