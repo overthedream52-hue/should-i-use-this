@@ -1,0 +1,118 @@
+{
+  "fields": {
+    "name": "ForNerds",
+    "url": "https://fornerds.ai/",
+    "suppliedText": "",
+    "situation": "AI 제품 개발 외주가 나에게 맞는지 궁금하다."
+  },
+  "answer": {
+    "id": "$ID",
+    "inputHash": "$HASH",
+    "asOf": "2026-09-15",
+    "status": "ready",
+    "userFacts": [],
+    "workstream": {
+      "label": "AI 제품 개발 외주 검토",
+      "statement": "AI 제품 개발 외주가 현재 상황에 필요한지 검토한다.",
+      "userFactIds": []
+    },
+    "discoverySources": [],
+    "sources": [
+      {
+        "id": "src_service",
+        "url": "https://fornerds.ai/",
+        "title": "ForNerds",
+        "excerpt": "AI 제품 개발과 AX 서비스를 제공하고 무료 상담과 맞춤 견적 절차를 안내한다.",
+        "retrievedAt": "2026-09-15",
+        "owner": "candidate",
+        "appliesToCandidateIds": [
+          "cand_fornerds"
+        ]
+      }
+    ],
+    "candidates": [
+      {
+        "id": "cand_fornerds",
+        "name": "ForNerds",
+        "kind": "service_vendor",
+        "role": "target",
+        "canonicalUrl": "https://fornerds.ai/",
+        "relation": "direct",
+        "relationReason": "AI 제품 개발 외주 서비스 후보다.",
+        "userFactIds": [],
+        "claims": [
+          {
+            "id": "cl_service",
+            "category": "capability",
+            "statement": "AI 제품 개발 서비스를 제공한다고 설명한다.",
+            "sourceIds": [
+              "src_service"
+            ]
+          },
+          {
+            "id": "cl_process",
+            "category": "process",
+            "statement": "무료 상담 뒤 맞춤 견적을 제공한다고 설명한다.",
+            "sourceIds": [
+              "src_service"
+            ]
+          },
+          {
+            "id": "cl_retention",
+            "category": "vendor_claim",
+            "statement": "재계약률 90%라고 업체가 주장한다.",
+            "sourceIds": [
+              "src_service"
+            ]
+          }
+        ],
+        "license": {
+          "status": "not_applicable",
+          "spdxId": null,
+          "sourceIds": []
+        },
+        "unknowns": [
+          {
+            "id": "un_sow",
+            "category": "acceptance",
+            "statement": "서면 업무범위와 검수 기준이 확인되지 않았다."
+          },
+          {
+            "id": "un_owner",
+            "category": "ownership",
+            "statement": "소스코드와 결과물 소유권이 확인되지 않았다."
+          },
+          {
+            "id": "un_data",
+            "category": "data_handling",
+            "statement": "업무 데이터 보관·삭제 조건이 확인되지 않았다."
+          }
+        ],
+        "canonicalSourceId": "src_service"
+      }
+    ],
+    "excluded": [],
+    "commitment": {
+      "targetCandidateId": "cand_fornerds",
+      "action": "hold_contract",
+      "statement": "공개 홈페이지만으로는 계약 조건과 현재 필요성이 충분하지 않아 계약을 보류한다.",
+      "userFactIds": [],
+      "claimIds": [
+        "cl_service",
+        "cl_process"
+      ],
+      "alternativeClaimIds": [],
+      "alternativeCandidateIds": [],
+      "unknownIds": [
+        "un_sow",
+        "un_owner",
+        "un_data"
+      ],
+      "currentMethodIds": []
+    },
+    "limitations": [
+      "인용문은 구독 AI가 제시한 내용이므로 원문 링크에서 다시 확인해야 한다."
+    ],
+    "currentMethods": []
+  }
+}

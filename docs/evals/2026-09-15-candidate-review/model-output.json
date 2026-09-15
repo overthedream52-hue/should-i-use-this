@@ -1,0 +1,42 @@
+{
+  "runId": "codex-subscription-2026-09-15T09:12:00+09:00",
+  "modelSurface": "current Codex subscription session",
+  "promptContract": "candidate-review-v1",
+  "outputs": [
+    {
+      "id": "runway-video",
+      "action": "hold_payment",
+      "reason": "무료 125 일회성 크레딧과 유료 크레딧 차이는 확인되지만, 사용자가 현재 방식의 구체적 실패와 필요한 생성량을 밝히지 않아 결제 가치를 계산할 수 없다.",
+      "currentOrFreeAlternative": "Runway Free",
+      "sourceUrls": ["https://runway.com/pricing", "https://runway.com/terms-of-use", "https://runway.com/privacy-policy"]
+    },
+    {
+      "id": "serena-coding",
+      "action": "do_not_pay",
+      "reason": "무료 LSP 백엔드가 기본 심볼 탐색과 편집을 제공하며, 유료 JetBrains 전용 기능이 현재 부족하다는 사용자 진술이 없다.",
+      "currentOrFreeAlternative": "Serena LSP backend",
+      "sourceUrls": ["https://github.com/oraios/serena/blob/main/README.md", "https://github.com/oraios/serena/blob/main/docs/02-usage/025_jetbrains_plugin.md"]
+    },
+    {
+      "id": "vidiq-marketing",
+      "action": "do_not_pay",
+      "reason": "vidIQ 무료 플랜과 YouTube Studio의 성과·트렌드 기능으로 먼저 부족을 관찰할 수 있어 현재 유료 플랜 근거가 없다.",
+      "currentOrFreeAlternative": "vidIQ Free + YouTube Studio",
+      "sourceUrls": ["https://vidiq.com/plans/", "https://support.google.com/youtube/answer/9002587"]
+    },
+    {
+      "id": "fornerds-vendor",
+      "action": "hold_contract",
+      "reason": "AI 개발 서비스와 무료 상담은 확인되지만 현재 외주 gap·예산과 서면 SOW·소유권·데이터 처리·지급·해지 조건이 없다.",
+      "currentOrFreeAlternative": "현재 직접 진행",
+      "sourceUrls": ["https://fornerds.ai/"]
+    }
+  ],
+  "mixedWorkstreamOutput": [
+    {"candidate":"UsageScope","inferredWorkstream":"AI 구독 사용량 모니터링","relationReason":"여러 AI 서비스의 할당량과 리셋 시간을 한 화면에서 확인하는 데 직접 관련된다.","canonicalUrl":"https://www.usagescope.com/"},
+    {"candidate":"Headroom","inferredWorkstream":"후보 식별 보류","relationReason":"같은 이름으로 계정 사용량 회전 도구와 토큰 압축 프록시가 검색되어 게시물의 정확한 URL 없이는 대상을 확정할 수 없다.","canonicalUrl":""},
+    {"candidate":"Serena","inferredWorkstream":"코드 심볼 탐색·리팩터링","relationReason":"언어 서버나 JetBrains 분석을 사용해 코드 구조를 심볼 단위로 검색하고 편집하는 데 관련된다.","canonicalUrl":"https://github.com/oraios/serena"},
+    {"candidate":"claude-mem","inferredWorkstream":"코딩 세션 간 기억","relationReason":"에이전트 세션 기록을 압축하고 이후 세션에 관련 문맥을 다시 주입하는 데 관련된다.","canonicalUrl":"https://github.com/thedotmack/claude-mem"},
+    {"candidate":"Ponytail","inferredWorkstream":"불필요한 코드와 과잉 구현 억제","relationReason":"코드를 쓰기 전에 필요성·재사용·표준 기능을 확인하도록 에이전트 구현 절차를 제한하는 데 관련된다.","canonicalUrl":"https://github.com/DietrichGebert/ponytail"}
+  ]
+}

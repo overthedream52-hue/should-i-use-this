@@ -8,6 +8,7 @@ import { renderFitAnswerV4 } from '../../lib/subscription-fit-v4';
 
 const skill = '.agents/skills/should-i-use-this';
 const contract = `${skill}/scripts/fit_contract.py`;
+const candidateContract = `${skill}/scripts/candidate_contract.py`;
 
 function run(script: string, command: 'prepare' | 'validate', value: unknown) {
   return spawnSync('python3', [script, command], {
@@ -95,5 +96,25 @@ describe('portable skill contract', () => {
     expect(result.status, result.stderr).toBe(0);
     expect(JSON.parse(result.stdout).packet.inputHash).toBe(buildFitPacket(input).inputHash);
     expect(readFileSync(join(root, 'should-i-use-this/SKILL.md'), 'utf8')).toContain('name: should-i-use-this');
+    expect(readFileSync(join(root, 'should-i-use-this/scripts/candidate_contract.py'), 'utf8')).toContain('research_hold');
+  });
+
+  it('routes URLs, lists, paid products and vendors through the candidate contract', () => {
+    const body = readFileSync(`${skill}/SKILL.md`, 'utf8');
+    const reference = readFileSync(`${skill}/references/candidate-contract.md`, 'utf8');
+    expect(body).toContain('candidate_contract.py');
+    expect(body).toContain('service vendor');
+    expect(reference).toContain('discovery source only');
+    expect(reference).toContain('free/open-source alternatives');
+    expect(reference).toContain('request_proposal');
+    expect(reference).toContain('source-code ownership');
+    expect(reference).toContain('vendor_claim');
+    expect(reference).toContain('Ask at most one short question');
+  });
+
+  it('offers candidate contract help as a portable script', () => {
+    const result = spawnSync('python3', [candidateContract, '--help'], { cwd: process.cwd(), encoding: 'utf8' });
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toContain('prepare|validate');
   });
 });

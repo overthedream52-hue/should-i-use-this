@@ -15,7 +15,28 @@ Judge pre-adoption value from public evidence and user-stated needs. Avoid turni
 - Do not inspect settings, conversations, private files, or work documents by default. Use environment information only when the user explicitly asks for it or approves the exact scope after previewing it.
 - Never send secrets or confidential material to another model or service.
 
-## Workflow
+## Routing
+
+Use the candidate workflow when the user gives a URL, recommendation list, paid product, MCP, open-source candidate, service vendor, asks for alternatives, or wants a decision before payment or contract. Use the direct-source workflow below only when one complete public source is already supplied and no discovery or comparison is needed.
+
+## Candidate workflow
+
+1. Read [references/candidate-contract.md](references/candidate-contract.md). Search the smallest sufficient current public evidence and compare the target with the user-stated current method plus relevant free/open-source alternatives. If browsing is unavailable, do not rely on memory for current facts; return a research hold.
+2. Put name, url, public suppliedText, and the user's situation in one JSON object. Run:
+
+   ~~~sh
+   python3 "$SKILL_DIR/scripts/candidate_contract.py" prepare < input.json > prepared.json
+   ~~~
+
+3. Analyze only prepared.json.packet plus the public pages actually read. Produce the exact candidate answer from the reference. Save an object with input and reply as exchange.json, then run:
+
+   ~~~sh
+   python3 "$SKILL_DIR/scripts/candidate_contract.py" validate < exchange.json > result.json
+   ~~~
+
+4. If validation fails, correct one structural or citation error using the same evidence. Never weaken the action gate or invent missing user facts. Present the trusted result.json.view in the reference order.
+
+## Direct-source workflow
 
 1. Identify one candidate tool and the user's stated job, pain, current method, and constraints. Do not repeat a question whose answer is already known.
 2. Gather the smallest sufficient public evidence. Prefer the product's official documentation for features, requirements, pricing conditions, supported environments, and operational duties. Record source URLs separately. If the source is missing or inconclusive, hold the judgment instead of asking the user to research the product.

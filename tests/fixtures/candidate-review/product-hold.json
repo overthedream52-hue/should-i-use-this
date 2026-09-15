@@ -1,0 +1,164 @@
+{
+  "fields": {
+    "name": "유료 영상 생성 제품",
+    "url": "https://example.com/video-product",
+    "suppliedText": "",
+    "situation": "짧은 홍보 영상을 만든다.\n현재 방법에서 장면 일관성이 부족하다."
+  },
+  "answer": {
+    "id": "$ID",
+    "inputHash": "$HASH",
+    "asOf": "2026-09-15",
+    "status": "ready",
+    "userFacts": [
+      {
+        "id": "uf_need",
+        "category": "need",
+        "statement": "짧은 홍보 영상을 만든다.",
+        "userSpanIds": [
+          "u1"
+        ]
+      },
+      {
+        "id": "uf_gap",
+        "category": "gap",
+        "statement": "현재 방법은 장면 일관성이 부족하다.",
+        "userSpanIds": [
+          "u2"
+        ]
+      }
+    ],
+    "workstream": {
+      "label": "홍보 영상 생성",
+      "statement": "짧은 홍보 영상의 장면 일관성을 개선한다.",
+      "userFactIds": [
+        "uf_need",
+        "uf_gap"
+      ]
+    },
+    "discoverySources": [],
+    "sources": [
+      {
+        "id": "src_product",
+        "url": "https://example.com/video-product",
+        "title": "Video Product",
+        "excerpt": "Consistent characters across scenes. Contact sales for pricing.",
+        "retrievedAt": "2026-09-15",
+        "owner": "candidate",
+        "appliesToCandidateIds": [
+          "cand_paid"
+        ]
+      },
+      {
+        "id": "src_free",
+        "url": "https://example.org/free-video",
+        "title": "Free Video",
+        "excerpt": "Free local video workflow.",
+        "retrievedAt": "2026-09-15",
+        "owner": "candidate",
+        "appliesToCandidateIds": [
+          "cand_free"
+        ]
+      }
+    ],
+    "candidates": [
+      {
+        "id": "cand_paid",
+        "name": "유료 영상 생성 제품",
+        "kind": "saas",
+        "role": "target",
+        "canonicalUrl": "https://example.com/video-product",
+        "relation": "direct",
+        "relationReason": "장면 일관성 기능을 설명한다.",
+        "userFactIds": [
+          "uf_need",
+          "uf_gap"
+        ],
+        "claims": [
+          {
+            "id": "cl_cap",
+            "category": "capability",
+            "statement": "장면 간 캐릭터 일관성 기능을 설명한다.",
+            "sourceIds": [
+              "src_product"
+            ]
+          }
+        ],
+        "license": {
+          "status": "not_applicable",
+          "spdxId": null,
+          "sourceIds": []
+        },
+        "unknowns": [
+          {
+            "id": "un_price",
+            "category": "price",
+            "statement": "개인용 실제 가격과 자동 갱신 조건이 확인되지 않았다."
+          }
+        ],
+        "canonicalSourceId": "src_product"
+      },
+      {
+        "id": "cand_free",
+        "name": "무료 영상 방식",
+        "kind": "software",
+        "role": "free_open_source",
+        "canonicalUrl": "https://example.org/free-video",
+        "relation": "direct",
+        "relationReason": "무료 영상 제작 대안이다.",
+        "userFactIds": [
+          "uf_need",
+          "uf_gap"
+        ],
+        "claims": [
+          {
+            "id": "cl_free",
+            "category": "capability",
+            "statement": "무료 영상 제작 흐름을 제공한다.",
+            "sourceIds": [
+              "src_free"
+            ]
+          }
+        ],
+        "license": {
+          "status": "not_applicable",
+          "spdxId": null,
+          "sourceIds": []
+        },
+        "unknowns": [
+          {
+            "id": "un_free_effect",
+            "category": "effect",
+            "statement": "장면 일관성 수준은 확인되지 않았다."
+          }
+        ],
+        "canonicalSourceId": "src_free"
+      }
+    ],
+    "excluded": [],
+    "commitment": {
+      "targetCandidateId": "cand_paid",
+      "action": "hold_payment",
+      "statement": "가격과 자동 갱신 조건이 없어 결제를 보류한다.",
+      "userFactIds": [
+        "uf_need",
+        "uf_gap"
+      ],
+      "claimIds": [
+        "cl_cap"
+      ],
+      "alternativeClaimIds": [
+        "cl_free"
+      ],
+      "alternativeCandidateIds": [
+        "cand_free"
+      ],
+      "unknownIds": [
+        "un_price"
+      ],
+      "currentMethodIds": []
+    },
+    "limitations": [],
+    "currentMethods": []
+  }
+}

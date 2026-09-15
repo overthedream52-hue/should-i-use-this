@@ -1,3 +1,3 @@
-import SubscriptionWorkspace from '../components/subscription-workspace';
+import DecisionWorkspace from '../components/decision-workspace';
 import example from '../lib/subscription-example.json';
-export default function Page() { return <SubscriptionWorkspace example={example} />; }
+export default function Page() { return <DecisionWorkspace example={example} />; }

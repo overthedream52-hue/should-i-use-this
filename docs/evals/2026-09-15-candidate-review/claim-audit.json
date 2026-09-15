@@ -1,0 +1,18 @@
+{
+  "auditedAt": "2026-09-15",
+  "auditor": "current Codex session against official public pages",
+  "claims": [
+    {"caseId":"runway-video","sourceUrl":"https://runway.com/pricing","claim":"무료 플랜은 125 일회성 크레딧이고 Standard는 연간 결제 표시 기준 월 12달러·월 625크레딧이다.","location":"pricing lines 25-60, 246","matched":true},
+    {"caseId":"runway-video","sourceUrl":"https://runway.com/terms-of-use","claim":"기간 구독은 정해진 절차로 중단하지 않으면 같은 기간으로 자동 갱신된다.","location":"terms line 26","matched":true},
+    {"caseId":"serena-coding","sourceUrl":"https://github.com/oraios/serena/blob/main/README.md","claim":"기본 LSP 백엔드는 무료·오픈소스 대안이고 JetBrains 백엔드는 유료이며 무료 체험이 있다.","location":"README lines 256-268","matched":true},
+    {"caseId":"serena-coding","sourceUrl":"https://github.com/oraios/serena/blob/main/README.md","claim":"의존성 검색·파일 이동·인라인 등 일부 기능은 JetBrains 쪽에만 표시된다.","location":"README lines 279-301","matched":true},
+    {"caseId":"vidiq-marketing","sourceUrl":"https://vidiq.com/plans/","claim":"무료 플랜은 월 150 AI 크레딧을 포함하고 Boost는 확장된 트렌드 조사와 월 2,000 크레딧을 제시한다.","location":"plans lines 17-50","matched":true},
+    {"caseId":"vidiq-marketing","sourceUrl":"https://support.google.com/youtube/answer/9002587","claim":"YouTube Studio는 성과 지표와 Trends의 검색·콘텐츠 gap 정보를 제공한다.","location":"help lines 17-35, 80-82","matched":true},
+    {"caseId":"fornerds-vendor","sourceUrl":"https://fornerds.ai/","claim":"ForNerds는 AI 제품 개발, 무료 상담, 고객 사례를 공개한다.","location":"homepage lines 4-19, 85-101","matched":true},
+    {"caseId":"fornerds-vendor","sourceUrl":"https://fornerds.ai/","claim":"재계약률 90%는 업체 홈페이지에 게시된 자체 수치다.","location":"homepage lines 21-24","matched":true}
+  ],
+  "limitations": [
+    "웹 페이지의 줄 번호는 2026-09-15 검색 렌더링 기준이며 페이지 변경 시 다시 감사해야 한다.",
+    "matched는 문구의 원문 지지만 뜻하며 제품 효과나 업체 성과의 독립 검증을 뜻하지 않는다."
+  ]
+}
