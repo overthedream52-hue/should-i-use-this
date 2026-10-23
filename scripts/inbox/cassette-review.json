@@ -1,0 +1,44 @@
+{
+  "name": "Cassette · AI 영상 편집",
+  "url": "https://github.com/cassette-editor/oh-my-cassette",
+  "checkedAt": "2026-10-06",
+  "definition": "영상 파일과 편집 요청을 보내면 Cassette 서비스가 편집·렌더링하는 도구입니다. Oh My Cassette는 Codex·Claude 등을 이 서비스에 연결하는 플러그인/MCP입니다.",
+  "relevance": "영상 제작에서 대화로 편집을 요청하는 흐름을 검토할 수 있습니다. 현재 편집 방식보다 나은지와 실제 절약 시간은 아직 확인하지 않았습니다.",
+  "cost": "플러그인은 MIT 무료 공개 소스 · Cassette 서비스 가격/사용 한도는 미확인",
+  "decision": "추가 확인 · 아직 설치나 결제를 권하는 단계가 아닙니다.",
+  "steps": [
+    "공식 계정 신청 링크는 현재 얼리 액세스 대기 신청서로 연결됩니다. 신청 후 발급 여부·요금·사용 한도를 확인합니다. Codex 구독과 별도 서비스입니다.",
+    "도입을 결정한 뒤 Mac에 Oh My Cassette 플러그인을 연결하고 Cassette 계정을 설정합니다. 문서는 macOS와 Python 3.11–3.13을 안내합니다.",
+    "전송할 영상 폴더를 선택하고 원하는 길이·내용·스타일을 Codex에 설명합니다. 매체는 Cassette 서버로 업로드됩니다.",
+    "돌아온 타임라인 요약과 장면 미리보기를 보고 수정 요청을 합니다.",
+    "결과가 맞으면 내보내기를 요청하고 완성 파일을 별도로 보관합니다. 문서는 첫 ingest부터 24시간 보관 제한을 안내합니다."
+  ],
+  "example": "예시 요청: ‘이 폴더의 영상으로 30초짜리 소개 영상을 구성해줘. 먼저 편집 구성과 장면 미리보기를 보여줘.’ — 기능·품질 보장이 아닌 요청 예시입니다.",
+  "limits": [
+    "현재 문서의 업로드 제한: MP4/H.264·SDR, 29.97/30fps, 최대1080p. 4K·ProRes·HDR 등 원본을 그대로 받는다고 가정하면 안 됩니다.",
+    "웹 데모 링크가 있지만 같은 README의 FAQ는 설치가 필요하다고 설명합니다. 설치 없는 사용 범위는 미확인입니다.",
+    "이전 저장 자료는 Desktop/offline 연결을 설명했지만 현재 문서는 별도 Cassette 서버 사용을 설명합니다. 로컬 MCP 실행을 영상의 로컬 처리로 해석하면 안 됩니다."
+  ],
+  "next": "가격·계정 발급·업로드 제한과 현재 영상 형식을 대조한 뒤 도입 여부를 판단합니다. 승인된 것은 공개 문서 조사이며 설치·결제·영상 전송이 아닙니다.",
+  "sources": [
+    {
+      "label": "공식 README · 사용 순서·요구사항·보관·비용 구분",
+      "url": "https://github.com/Cassette-Editor/oh-my-cassette#-quick-start"
+    },
+    {
+      "label": "Cassette 사이트 · 가격 본문은 이번 조회에서 확인하지 못함",
+      "url": "https://trycassette.online/"
+    }
+  ],
+  "researchScope": "Cassette Web/Desktop의 가격·Mac 호환·자료 전송 조건을 공개 문서로 비교한 도입 판단표 작성",
+  "actions": [
+    {
+      "label": "공식 계정 신청 · Aside에서 열기",
+      "url": "https://trycassette.online/signup/"
+    },
+    {
+      "label": "공식 홈페이지 · Aside에서 열기",
+      "url": "https://trycassette.online/"
+    }
+  ]
+}

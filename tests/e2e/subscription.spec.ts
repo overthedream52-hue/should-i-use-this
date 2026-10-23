@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 test('subscription roundtrip preserves original evidence and clears stale result', async ({ page }) => {
   await page.goto('/');
+  await page.getByRole('tab', { name: '원문 하나 판단' }).click();
   await page.getByRole('button', { name: '공개 예시로 시작' }).click();
   await page.getByRole('button', { name: '분석 자료 준비', exact: true }).click();
   await expect(page.getByRole('button', { name: '분석 요청 복사' })).toBeDisabled();
@@ -31,6 +32,7 @@ test('subscription roundtrip preserves original evidence and clears stale result
 });
 test('editing an input clears prepared data and stale results', async ({ page }) => {
   await page.goto('/');
+  await page.getByRole('tab', { name: '원문 하나 판단' }).click();
   await page.getByRole('button', { name: '공개 예시로 시작' }).click();
   await page.getByRole('button', { name: '분석 자료 준비', exact: true }).click();
   await expect(page.getByRole('button', { name: '분석 요청 복사' })).toBeVisible();
@@ -42,6 +44,7 @@ test('clipboard failure offers manual copy and no automatic AI request', async (
   const apis: string[] = [];
   page.on('request', request => { if (request.url().includes('/api/')) apis.push(new URL(request.url()).pathname); });
   await page.goto('/');
+  await page.getByRole('tab', { name: '원문 하나 판단' }).click();
   await page.getByRole('button', { name: '공개 예시로 시작' }).click();
   await page.getByRole('button', { name: '분석 자료 준비', exact: true }).click();
   await page.getByRole('checkbox').check();

@@ -1,0 +1,376 @@
+{
+  "answer": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "format": {
+        "type": "string",
+        "const": "adoption-v4"
+      },
+      "requestKey": {
+        "type": "string",
+        "pattern": "^[a-f0-9]{32}$"
+      },
+      "assessments": {
+        "minItems": 1,
+        "maxItems": 5,
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "candidate": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 120
+            },
+            "verdict": {
+              "type": "string",
+              "enum": [
+                "consider",
+                "keep_current",
+                "needs_info"
+              ]
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 800
+            },
+            "need": {
+              "maxItems": 8,
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 120
+              }
+            },
+            "gap": {
+              "maxItems": 8,
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 120
+              }
+            },
+            "current": {
+              "maxItems": 8,
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 120
+              }
+            },
+            "offer": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "cost": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "free",
+                    "paid",
+                    "unknown"
+                  ]
+                },
+                "evidence": {
+                  "maxItems": 8,
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 120
+                  }
+                }
+              },
+              "required": [
+                "kind",
+                "evidence"
+              ],
+              "additionalProperties": false
+            },
+            "claims": {
+              "maxItems": 12,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "identity",
+                      "capability",
+                      "price",
+                      "permission",
+                      "data_handling",
+                      "maintenance",
+                      "license",
+                      "requirement",
+                      "process",
+                      "vendor_claim"
+                    ]
+                  },
+                  "statement": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "refs": {
+                    "minItems": 1,
+                    "maxItems": 8,
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 120
+                    }
+                  },
+                  "scope": {
+                    "type": "string",
+                    "enum": [
+                      "offer",
+                      "product",
+                      "unknown"
+                    ]
+                  },
+                  "offer": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 80
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "category",
+                  "statement",
+                  "refs",
+                  "scope",
+                  "offer"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "unknowns": {
+              "maxItems": 12,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "identity",
+                      "capability",
+                      "price",
+                      "permission",
+                      "data_handling",
+                      "maintenance",
+                      "license",
+                      "requirement",
+                      "effect"
+                    ]
+                  },
+                  "statement": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "category",
+                  "statement"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "nextCheck": {
+              "type": "string",
+              "enum": [
+                "compare_terms",
+                "keep_current",
+                "public_sources",
+                "ask_user"
+              ]
+            },
+            "question": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            }
+          },
+          "required": [
+            "candidate",
+            "verdict",
+            "reason",
+            "need",
+            "gap",
+            "current",
+            "offer",
+            "cost",
+            "claims",
+            "unknowns",
+            "nextCheck"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": [
+      "format",
+      "requestKey",
+      "assessments"
+    ],
+    "additionalProperties": false
+  },
+  "bundle": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "format": {
+        "type": "string",
+        "const": "source-bundle-v1"
+      },
+      "requestKey": {
+        "type": "string",
+        "pattern": "^[a-f0-9]{32}$"
+      },
+      "sources": {
+        "maxItems": 10,
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "candidateUrl": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "mcp",
+                "skill",
+                "plugin",
+                "software",
+                "saas",
+                "open_source",
+                "service_vendor"
+              ]
+            },
+            "url": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            },
+            "text": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 12000
+            }
+          },
+          "required": [
+            "candidateUrl",
+            "name",
+            "kind",
+            "url",
+            "title",
+            "text"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": [
+      "format",
+      "requestKey",
+      "sources"
+    ],
+    "additionalProperties": false
+  },
+  "sources": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "minItems": 1,
+    "maxItems": 10,
+    "type": "array",
+    "items": {
+      "type": "object",
+      "properties": {
+        "candidateUrl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "mcp",
+            "skill",
+            "plugin",
+            "software",
+            "saas",
+            "open_source",
+            "service_vendor"
+          ]
+        },
+        "url": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 12000
+        }
+      },
+      "required": [
+        "candidateUrl",
+        "name",
+        "kind",
+        "url",
+        "title",
+        "text"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

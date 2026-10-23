@@ -7,3 +7,6 @@ test-results/
 *.tsbuildinfo
 .superpowers/
 __pycache__/
+/.local-private/
+docs/evals/
+.DS_Store

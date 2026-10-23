@@ -8,7 +8,7 @@ export default defineConfig({
   use: { baseURL, trace: "retain-on-failure" },
   webServer: {
     command: evidencePort
-      ? `npm run start -- --port ${Number(evidencePort)}`
+      ? `python3 -m http.server ${Number(evidencePort)} --directory out`
       : "npm run dev",
     url: baseURL,
     reuseExistingServer: !process.env.CI,
