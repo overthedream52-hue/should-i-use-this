@@ -1,0 +1,1 @@
+{"fields":{"name":"AI 도구 추천 목록","url":"","suppliedText":"UsageScope, Headroom, Serena, claude-mem, Ponytail","situation":"영상 제작과 코딩을 함께 한다.\n각 업무에서 반복 작업을 줄일 도구가 필요한지 알고 싶다."},"expected":{"forbiddenSameReason":true,"forbiddenProductivityPattern":"%|퍼센트|시간 절감|생산성 [0-9]"}}

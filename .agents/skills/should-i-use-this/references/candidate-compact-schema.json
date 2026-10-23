@@ -1,0 +1,455 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "format": {
+      "type": "string",
+      "const": "candidate-compact-v3"
+    },
+    "requestKey": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{32}$"
+    },
+    "userFacts": {
+      "maxItems": 8,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "job",
+              "need",
+              "gap",
+              "current_method",
+              "constraint",
+              "trial_preference"
+            ]
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "span": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "category",
+          "statement",
+          "span"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "workstream": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      },
+      "required": [
+        "label",
+        "statement"
+      ],
+      "additionalProperties": false
+    },
+    "sources": {
+      "maxItems": 20,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "excerpt": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1200
+          },
+          "owner": {
+            "type": "string",
+            "enum": [
+              "candidate",
+              "platform",
+              "independent"
+            ]
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "product",
+              "offer",
+              "unknown"
+            ]
+          },
+          "offerId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "url",
+          "title",
+          "excerpt",
+          "owner",
+          "scope",
+          "offerId"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "candidates": {
+      "maxItems": 5,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "mcp",
+              "skill",
+              "plugin",
+              "software",
+              "saas",
+              "open_source",
+              "service_vendor"
+            ]
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "target",
+              "free_open_source",
+              "paid_alternative",
+              "vendor_alternative"
+            ]
+          },
+          "canonicalSource": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20
+          },
+          "relation": {
+            "type": "string",
+            "enum": [
+              "direct",
+              "indirect"
+            ]
+          },
+          "relationReason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "facts": {
+            "maxItems": 8,
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20
+            }
+          },
+          "claims": {
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "category": {
+                  "type": "string",
+                  "enum": [
+                    "identity",
+                    "capability",
+                    "price",
+                    "trial",
+                    "renewal",
+                    "cancellation",
+                    "requirement",
+                    "permission",
+                    "data_handling",
+                    "maintenance",
+                    "process",
+                    "ownership",
+                    "vendor_claim"
+                  ]
+                },
+                "statement": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 600
+                },
+                "source": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 20
+                },
+                "quote": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1200
+                }
+              },
+              "required": [
+                "category",
+                "statement",
+                "source",
+                "quote"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "license": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "documented",
+                  "unknown",
+                  "not_applicable"
+                ]
+              },
+              "spdxId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "sources": {
+                "maxItems": 4,
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 20
+                }
+              }
+            },
+            "required": [
+              "status",
+              "spdxId",
+              "sources"
+            ],
+            "additionalProperties": false
+          },
+          "unknowns": {
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "category": {
+                  "type": "string",
+                  "enum": [
+                    "price",
+                    "permission",
+                    "data_handling",
+                    "maintenance",
+                    "ownership",
+                    "acceptance",
+                    "payment_terms",
+                    "termination",
+                    "effect"
+                  ]
+                },
+                "statement": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
+                }
+              },
+              "required": [
+                "category",
+                "statement"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "name",
+          "kind",
+          "role",
+          "canonicalSource",
+          "relation",
+          "relationReason",
+          "facts",
+          "claims",
+          "license",
+          "unknowns"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "decision": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "review_payment",
+            "trial_first",
+            "hold_payment",
+            "do_not_pay",
+            "request_proposal",
+            "hold_contract",
+            "research_hold"
+          ]
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 800
+        },
+        "facts": {
+          "maxItems": 8,
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20
+          }
+        },
+        "claims": {
+          "maxItems": 12,
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20
+          }
+        },
+        "alternatives": {
+          "maxItems": 5,
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20
+          }
+        },
+        "currentMethods": {
+          "maxItems": 6,
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20
+          }
+        },
+        "offerId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "nextAction": {
+          "type": "string",
+          "enum": [
+            "keep_current",
+            "research_public",
+            "ask_user",
+            "optional_trial",
+            "review_terms",
+            "request_proposal"
+          ]
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        }
+      },
+      "required": [
+        "target",
+        "action",
+        "statement",
+        "facts",
+        "claims",
+        "alternatives",
+        "currentMethods",
+        "offerId",
+        "nextAction"
+      ],
+      "additionalProperties": false
+    },
+    "limitations": {
+      "maxItems": 12,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+      }
+    }
+  },
+  "required": [
+    "format",
+    "requestKey",
+    "userFacts",
+    "workstream",
+    "sources",
+    "candidates",
+    "decision",
+    "limitations"
+  ],
+  "additionalProperties": false
+}

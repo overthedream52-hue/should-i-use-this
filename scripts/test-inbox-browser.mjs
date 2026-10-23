@@ -1,0 +1,48 @@
+import { chromium } from '@playwright/test';
+import { spawn, execFileSync } from 'node:child_process';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import assert from 'node:assert/strict';
+const dir=mkdtempSync(join(tmpdir(),'siut-inbox-'));
+const db=join(dir,'test.sqlite3');
+const server=spawn('python3',['scripts/local-inbox.py','--db',db,'serve','--port','0']);
+let browser;
+try {
+ const url=await new Promise((resolve,reject)=>{server.stdout.once('data',d=>resolve(String(d).trim()));server.once('error',reject);server.once('exit',code=>reject(Error('server exit '+code)));});
+ browser=await chromium.launch({channel:'chrome',headless:true});
+ const page=await browser.newPage();await page.goto(url);await page.waitForFunction(()=>document.querySelector('#storage').textContent.includes('sqlite'));
+ await page.locator('#profile').fill('아직 저장하지 않은 업무 초안');
+ await page.route('**/api/profile',route=>route.abort());
+ await page.locator('#save').click();await page.waitForFunction(()=>document.querySelector('#message').textContent.length>0);
+ await page.unroute('**/api/profile');await page.locator('#refresh').click();await page.waitForTimeout(150);
+ assert.equal(await page.locator('#profile').inputValue(),'아직 저장하지 않은 업무 초안','failed save must preserve draft on next refresh');
+ await page.locator('#save').click();await page.waitForTimeout(150);await page.reload();
+ await page.waitForFunction(()=>document.querySelector('#profile').value.includes('업무 초안'));
+ execFileSync('python3',['-c',`import sys,json;sys.path.insert(0,'scripts');from inbox.store import Store;s=Store(sys.argv[1]);s.observe(dict(url='https://github.com/example/tool',name='Example',text='Sample public README'));j=s.jobs()[0];a=dict(format='adoption-v4',requestKey=j['packet']['requestKey'],assessments=[dict(candidate=1,verdict='needs_info',reason='합성 검증 자료',need=[],gap=[],current=[],offer=None,cost=dict(kind='unknown',evidence=[]),claims=[],unknowns=[dict(category='requirement',statement='조건 미확인')],nextCheck='public_sources')]);s.submit(j['id'],json.dumps(a),dict(scope='공개 문서 비교',benefit='조건 확인',risk='설치 비용 없음',check='공식 문서 대조',rollback='초안 폐기'))`,db]);
+ await page.locator('#refresh').click();await page.getByRole('button',{name:'이 범위 승인'}).waitFor();
+ page.on('dialog',dialog=>dialog.accept());await page.getByRole('button',{name:'이 범위 승인'}).click();
+ await page.getByRole('button',{name:'승인 철회'}).waitFor();
+ const approved=JSON.parse(execFileSync('python3',['scripts/local-inbox.py','--db',db,'approved'],{encoding:'utf8'}));assert.equal(approved.length,1);
+ await page.getByRole('button',{name:'승인 철회'}).click();await page.waitForTimeout(150);
+ assert.equal(JSON.parse(execFileSync('python3',['scripts/local-inbox.py','--db',db,'approved'],{encoding:'utf8'})).length,0);
+ execFileSync('python3',['-c',`import sys;sys.path.insert(0,'scripts');from pathlib import Path;from inbox.web_references import Archive,collection_failure;Archive(Path(sys.argv[1]).parent/'web-collections').save(collection_failure('https://www.instagram.com/p/ABCDE123/','page returned HTTP 403'))`,db]);
+ await page.locator('#refresh').click();await page.locator('#references').getByText('수집 차단 · 원문 미확인',{exact:false}).waitFor();
+ assert.equal(await page.locator('#references article').count(),1);
+ assert.equal(await page.locator('#candidates article').count(),1,'reference must not create candidate');
+ await page.getByRole('button',{name:'자료에서 후보 찾기',exact:true}).click();
+ await page.waitForFunction(()=>!document.querySelector('#resolve-references').disabled);
+ await page.locator('#refresh').click();
+ await page.locator('#references').getByText('추가 조사 필요 · 제품 식별 또는 원문 확인 미완료',{exact:true}).waitFor();
+ assert.equal(await page.locator('#candidates article').count(),1,'blocked reference resolution must not create candidate');
+ execFileSync('python3',['-c',`import sys,base64;sys.path.insert(0,'scripts');from inbox.store import Store;from inbox.web_references import Archive;from inbox.reference_candidates import ReferenceCandidates;s=Store(sys.argv[1]);Archive(s.path.parent/'web-collections').save(dict(format='web-collection-v1',url='https://example.com/public-post',collectedAt='2026-10-06T00:00:00Z',collector='scrapling',status='partial',text='700 times faster! https://github.com/example/fresh',media=[],limitations=['Synthetic public fixture']));ReferenceCandidates(s).resolve(get=lambda u:dict(encoding='base64',content=base64.b64encode(b'Publisher README only').decode(),sha='a'*40) if u.endswith('/readme') else dict(full_name='example/fresh',html_url='https://github.com/example/fresh',private=False))`,db]);
+ await page.locator('#refresh').click();await page.locator('#references').getByText(' · README 확보 · 분석 대기',{exact:true}).waitFor();
+ assert.equal(await page.locator('#candidates article').count(),2);
+ assert.equal(await page.locator('#candidates').getByText('700 times faster!',{exact:false}).count(),0);
+ await page.reload();await page.locator('#references').getByText(' · README 확보 · 분석 대기',{exact:true}).waitFor();
+
+ await page.setViewportSize({width:390,height:844});await page.screenshot({path:'docs/evals/2026-10-06-local-inbox/mobile-test.png',fullPage:true});
+ await page.screenshot({path:'docs/evals/2026-10-06-reference-candidates/mobile.png',fullPage:true});
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'mobile overflow');
+ console.log('PASS: reference failure visible and separate from candidates; failed draft save preserved, reload persistence, human approval/revocation, CLI agreement, mobile render');
+} finally {await browser?.close();server.kill();await new Promise(resolve=>server.once('exit',resolve));rmSync(dir,{recursive:true,force:true});}
