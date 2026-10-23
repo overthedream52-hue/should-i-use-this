@@ -3,7 +3,7 @@ test('home starts with URL comparison and makes no automatic analysis requests',
   const calls: string[] = [];
   page.on('request', r => { if (r.url().includes('/api/')) calls.push(new URL(r.url()).pathname); });
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: /이 제품이나 업체/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /이 도구나 서비스/ })).toBeVisible();
   await expect(page.getByRole('button', { name: 'ForNerds 공개 예시', exact: true })).toBeVisible();
   await expect(page.getByText(/입력은 서버로 자동 전송되지 않습니다/)).toBeVisible();
   await expect(page.getByRole('combobox')).toHaveCount(0);

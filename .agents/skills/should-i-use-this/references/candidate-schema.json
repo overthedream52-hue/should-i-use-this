@@ -1,0 +1,673 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "policyVersion": {
+      "type": "string",
+      "enum": [
+        "candidate-policy-v2",
+        "candidate-policy-v3"
+      ]
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "inputHash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "asOf": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ready",
+        "hold"
+      ]
+    },
+    "userFacts": {
+      "maxItems": 12,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "job",
+              "need",
+              "gap",
+              "current_method",
+              "constraint",
+              "trial_preference"
+            ]
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "userSpanIds": {
+            "minItems": 1,
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^u[1-9]\\d*$"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "category",
+          "statement",
+          "userSpanIds"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "workstream": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "userFactIds": {
+          "maxItems": 8,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+          }
+        }
+      },
+      "required": [
+        "label",
+        "statement",
+        "userFactIds"
+      ],
+      "additionalProperties": false
+    },
+    "discoverySources": {
+      "maxItems": 10,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 2048
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "id",
+          "url",
+          "title",
+          "note"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "sources": {
+      "maxItems": 20,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "type": "string",
+            "enum": [
+              "product",
+              "offer",
+              "unknown"
+            ]
+          },
+          "offerId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 2048
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "excerpt": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1200
+          },
+          "retrievedAt": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "owner": {
+            "type": "string",
+            "enum": [
+              "candidate",
+              "platform",
+              "independent"
+            ]
+          },
+          "appliesToCandidateIds": {
+            "minItems": 1,
+            "maxItems": 5,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "url",
+          "title",
+          "excerpt",
+          "retrievedAt",
+          "owner",
+          "appliesToCandidateIds"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "candidates": {
+      "maxItems": 5,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "mcp",
+              "skill",
+              "plugin",
+              "software",
+              "saas",
+              "open_source",
+              "service_vendor"
+            ]
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "target",
+              "free_open_source",
+              "paid_alternative",
+              "vendor_alternative"
+            ]
+          },
+          "canonicalUrl": {
+            "type": "string",
+            "maxLength": 2048
+          },
+          "canonicalSourceId": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+          },
+          "relation": {
+            "type": "string",
+            "enum": [
+              "direct",
+              "indirect"
+            ]
+          },
+          "relationReason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "userFactIds": {
+            "maxItems": 8,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+            }
+          },
+          "claims": {
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "scope": {
+                  "type": "string",
+                  "enum": [
+                    "product",
+                    "offer",
+                    "unknown"
+                  ]
+                },
+                "offerId": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "quote": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1200
+                },
+                "id": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+                },
+                "category": {
+                  "type": "string",
+                  "enum": [
+                    "identity",
+                    "capability",
+                    "price",
+                    "trial",
+                    "renewal",
+                    "cancellation",
+                    "requirement",
+                    "permission",
+                    "data_handling",
+                    "maintenance",
+                    "process",
+                    "ownership",
+                    "vendor_claim"
+                  ]
+                },
+                "statement": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 600
+                },
+                "sourceIds": {
+                  "minItems": 1,
+                  "maxItems": 4,
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "category",
+                "statement",
+                "sourceIds"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "license": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "documented",
+                  "unknown",
+                  "not_applicable"
+                ]
+              },
+              "spdxId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "sourceIds": {
+                "maxItems": 4,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+                }
+              }
+            },
+            "required": [
+              "status",
+              "spdxId",
+              "sourceIds"
+            ],
+            "additionalProperties": false
+          },
+          "unknowns": {
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+                },
+                "category": {
+                  "type": "string",
+                  "enum": [
+                    "price",
+                    "permission",
+                    "data_handling",
+                    "maintenance",
+                    "ownership",
+                    "acceptance",
+                    "payment_terms",
+                    "termination",
+                    "effect"
+                  ]
+                },
+                "statement": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
+                }
+              },
+              "required": [
+                "id",
+                "category",
+                "statement"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "role",
+          "canonicalUrl",
+          "canonicalSourceId",
+          "relation",
+          "relationReason",
+          "userFactIds",
+          "claims",
+          "license",
+          "unknowns"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "currentMethods": {
+      "maxItems": 6,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "userFactIds": {
+            "minItems": 1,
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "statement",
+          "userFactIds"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "excluded": {
+      "maxItems": 12,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": ""
+              },
+              {
+                "type": "string",
+                "maxLength": 2048
+              }
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "identity_mismatch",
+              "no_canonical_source",
+              "license_unknown",
+              "unrelated",
+              "duplicate"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "url",
+          "reason"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "commitment": {
+      "type": "object",
+      "properties": {
+        "offerId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "nextAction": {
+          "type": "string",
+          "enum": [
+            "keep_current",
+            "research_public",
+            "ask_user",
+            "optional_trial",
+            "review_terms",
+            "request_proposal"
+          ]
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "targetCandidateId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "review_payment",
+            "trial_first",
+            "hold_payment",
+            "do_not_pay",
+            "request_proposal",
+            "hold_contract",
+            "research_hold"
+          ]
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 800
+        },
+        "userFactIds": {
+          "maxItems": 8,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+          }
+        },
+        "claimIds": {
+          "maxItems": 12,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+          }
+        },
+        "alternativeClaimIds": {
+          "maxItems": 12,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+          }
+        },
+        "alternativeCandidateIds": {
+          "maxItems": 5,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+          }
+        },
+        "currentMethodIds": {
+          "maxItems": 6,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+          }
+        },
+        "unknownIds": {
+          "maxItems": 12,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+          }
+        }
+      },
+      "required": [
+        "targetCandidateId",
+        "action",
+        "statement",
+        "userFactIds",
+        "claimIds",
+        "alternativeClaimIds",
+        "alternativeCandidateIds",
+        "currentMethodIds",
+        "unknownIds"
+      ],
+      "additionalProperties": false
+    },
+    "limitations": {
+      "maxItems": 12,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+      }
+    }
+  },
+  "required": [
+    "id",
+    "inputHash",
+    "asOf",
+    "status",
+    "userFacts",
+    "workstream",
+    "discoverySources",
+    "sources",
+    "candidates",
+    "currentMethods",
+    "excluded",
+    "commitment",
+    "limitations"
+  ],
+  "additionalProperties": false
+}

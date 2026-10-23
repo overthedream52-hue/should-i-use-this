@@ -1,0 +1,35 @@
+import {test,expect} from '@playwright/test';
+import {fixture,fields} from '../fixtures/adoption';
+test('public source collection transitions to adoption and clears everything on edit',async({page})=>{
+ await page.goto('/');const outgoing:string[]=[];const origin=new URL(page.url()).origin;
+ page.on('request',r=>{if(new URL(r.url()).origin!==origin)outgoing.push(r.url());});
+ await page.getByLabel('후보 이름').fill(fields.name);await page.getByLabel('후보 URL').fill(fields.url);await page.getByRole('textbox',{name:'내 상황 선택'}).fill(fields.situation);
+ await page.getByRole('button',{name:'비교 자료 준비'}).click();
+ const read=async()=>JSON.parse((await page.getByLabel('후보 조사 전송 내용').inputValue()).split('신뢰 입력:\n')[1]);
+ const first=await read();const {p,a}=fixture();
+ await page.getByRole('checkbox').check();
+ await page.getByLabel('후보 조사 AI 답변').fill(JSON.stringify({format:'source-bundle-v1',requestKey:first.inputHash.slice(0,32),sources:p.input.sources}));
+ await page.getByRole('button',{name:'후보 답변과 근거 확인'}).click();
+ await expect(page.getByText('고정한 근거로 도입 판단하기',{exact:false})).toBeVisible();
+ await expect(page.getByRole('checkbox')).not.toBeChecked();
+ await expect(page.getByRole('button',{name:'조사 요청 복사'})).toBeDisabled();
+ const second=await read();a.requestKey=second.requestKey;
+ await page.getByLabel('후보 조사 AI 답변').fill('설명\n```json\n'+JSON.stringify(a)+'\n```\n체험하라는 부연은 판단에 사용하지 않음');
+ await page.getByRole('button',{name:'후보 답변과 근거 확인'}).click();
+ const result=page.getByRole('region',{name:'후보 결제 전 검토 결과'});
+ await expect(result.getByRole('heading',{name:'도입을 검토할 근거가 있습니다'})).toBeVisible();
+ await expect(result).toContainText('비용: 무료 근거 있음');await expect(result).toContainText('JSON 밖의 부연 설명은 판단에 반영하지 않았습니다.');
+ await result.getByText('번호로 연결한 원문 보기').click();await expect(result.getByText('Local captions. Free MIT software.',{exact:false}).first()).toBeVisible();
+ expect(outgoing).toEqual([]);
+ await page.getByRole('textbox',{name:'내 상황 선택'}).fill('다른 상황');await expect(result).toHaveCount(0);await expect(page.getByText('고정한 근거로 도입 판단하기',{exact:false})).toHaveCount(0);
+});
+test('provided public sources skip collection and empty collection is a recoverable error',async({page})=>{
+ await page.goto('/');await page.getByLabel('후보 이름').fill(fields.name);
+ await page.getByText('추천 목록이나 게시물 내용도 넣기').click();await page.getByLabel('공개 목록 텍스트').fill(JSON.stringify(fixture().p.input.sources));
+ await page.getByRole('button',{name:'비교 자료 준비'}).click();await expect(page.getByText('고정한 근거로 도입 판단하기',{exact:false})).toBeVisible();
+ await page.getByRole('button',{name:'입력과 결과 지우기'}).click();await expect(page.getByText('고정한 근거로 도입 판단하기',{exact:false})).toHaveCount(0);
+ await page.getByLabel('후보 이름').fill('unknown');await page.getByRole('button',{name:'비교 자료 준비'}).click();
+ const p=JSON.parse((await page.getByLabel('후보 조사 전송 내용').inputValue()).split('신뢰 입력:\n')[1]);
+ await page.getByLabel('후보 조사 AI 답변').fill(JSON.stringify({format:'source-bundle-v1',requestKey:p.inputHash.slice(0,32),sources:[]}));
+ await page.getByRole('button',{name:'후보 답변과 근거 확인'}).click();await expect(page.getByRole('status')).toContainText('원문이 비어');
+});

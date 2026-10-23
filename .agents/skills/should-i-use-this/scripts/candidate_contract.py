@@ -3,10 +3,12 @@
 
 from __future__ import annotations
 
+import candidate_compact as compact
 import datetime as dt
 import hashlib
 import ipaddress
 import json
+from pathlib import Path
 import re
 import sys
 import uuid
@@ -33,6 +35,22 @@ class ContractError(ValueError):
 def utf16_len(value: str) -> int:
     return len(value.encode("utf-16-le")) // 2
 
+POLICY = json.loads((Path(__file__).resolve().parent.parent / "references/candidate-policy.json").read_text())
+
+def extended(value, required, optional, name):
+    if not isinstance(value, dict) or not required.issubset(value) or set(value) - required - optional:
+        raise ContractError("invalid " + name)
+    return value
+
+def scope_fields(raw, parsed, claim=False):
+    if "scope" in raw:
+        parsed["scope"] = enum(raw["scope"], {"product","offer","unknown"}, "scope")
+    if "offerId" in raw:
+        parsed["offerId"] = None if raw["offerId"] is None else identifier(raw["offerId"], "offer")
+    if claim and "quote" in raw:
+        parsed["quote"] = text(raw["quote"], "quote", 1, 1200, True)
+
+
 def obj(value: Any, keys: set[str], name: str) -> dict[str, Any]:
     if not isinstance(value, dict) or set(value) != keys:
         raise ContractError("invalid " + name)
@@ -46,7 +64,7 @@ def arr(value: Any, name: str, minimum: int = 0, maximum: int | None = None) -> 
 def text(value: Any, name: str, minimum: int = 0, maximum: int | None = None, trim: bool = False) -> str:
     if not isinstance(value, str):
         raise ContractError("invalid " + name)
-    result = value.strip() if trim else value
+    result = compact.js_trim(value) if trim else value
     size = utf16_len(result)
     if size < minimum or (maximum is not None and size > maximum):
         raise ContractError("invalid " + name)
@@ -124,10 +142,10 @@ def sentence_spans(value: str) -> list[dict[str, Any]]:
     spans: list[dict[str, Any]] = []
     for match in re.finditer(r"[^\n.!?。！？]+(?:[.!?。！？]+|(?=\n|$))", value):
         raw = match.group(0)
-        stripped = raw.strip()
+        stripped = compact.js_trim(raw)
         if not stripped:
             continue
-        leading = len(raw) - len(raw.lstrip())
+        leading = len(raw) - len(raw.lstrip(compact.JS_WHITESPACE))
         point = match.start() + leading
         start = utf16_len(value[:point])
         spans.append({"id": "u" + str(len(spans) + 1), "text": stripped, "start": start, "end": start + utf16_len(stripped)})
@@ -142,10 +160,10 @@ def validate_input(value: Any, allow_missing_id: bool) -> dict[str, Any]:
     url = text(raw["url"], "url", 0, 2048, True)
     if url:
         url = public_url(url, "url", True, True)
-    if not (name or url or supplied.strip() or situation.strip()):
+    if not (name or url or compact.js_trim(supplied) or compact.js_trim(situation)):
         raise ContractError("candidate or situation required")
     identifier_value = str(uuid.uuid4()) if allow_missing_id else ""
-    source_kind = "candidate_list" if supplied.strip() else ("single_candidate" if name or url else "unknown")
+    source_kind = "candidate_list" if compact.js_trim(supplied) else ("single_candidate" if name or url else "unknown")
     return {
         "id": identifier_value,
         "asOf": dt.date.today().isoformat(),
@@ -183,19 +201,21 @@ def build_packet(input_value: dict[str, Any]) -> dict[str, Any]:
     return {**input_value, "userSpans": sentence_spans(input_value["situation"]), "inputHash": hashlib.sha256(encoded.encode("utf-8")).hexdigest()}
 
 def parse_answer(value: Any) -> dict[str, Any]:
-    raw = obj(value, {"id","inputHash","asOf","status","userFacts","workstream","discoverySources","sources","candidates","currentMethods","excluded","commitment","limitations"}, "answer")
+    raw = extended(value, {"id","inputHash","asOf","status","userFacts","workstream","discoverySources","sources","candidates","currentMethods","excluded","commitment","limitations"}, {"policyVersion"}, "answer")
     answer: dict[str, Any] = {
         "id": text(raw["id"], "answer id", 36, 36),
         "inputHash": text(raw["inputHash"], "hash", 64, 64),
         "asOf": date(raw["asOf"], "answer date"),
         "status": enum(raw["status"], {"ready","hold"}, "status"),
     }
+    if "policyVersion" in raw:
+        answer["policyVersion"] = enum(raw["policyVersion"], {"candidate-policy-v2","candidate-policy-v3"}, "policy version")
     if not UUID.fullmatch(answer["id"]) or not re.fullmatch(r"[a-f0-9]{64}", answer["inputHash"]):
         raise ContractError("invalid answer binding")
     answer["userFacts"] = []
     for item in arr(raw["userFacts"], "user facts", 0, 12):
         fact = obj(item, {"id","category","statement","userSpanIds"}, "user fact")
-        answer["userFacts"].append({"id":identifier(fact["id"],"user fact id"),"category":enum(fact["category"],{"job","need","gap","current_method","constraint"},"user fact category"),"statement":text(fact["statement"],"user fact statement",1,500,True),"userSpanIds":refs(fact["userSpanIds"],"user span id",4,1)})
+        answer["userFacts"].append({"id":identifier(fact["id"],"user fact id"),"category":enum(fact["category"],{"job","need","gap","current_method","constraint","trial_preference"},"user fact category"),"statement":text(fact["statement"],"user fact statement",1,500,True),"userSpanIds":refs(fact["userSpanIds"],"user span id",4,1)})
     work = obj(raw["workstream"], {"label","statement","userFactIds"}, "workstream")
     answer["workstream"] = {"label":text(work["label"],"workstream label",1,100,True),"statement":text(work["statement"],"workstream statement",1,500,True),"userFactIds":refs(work["userFactIds"],"workstream fact",8)}
     answer["discoverySources"] = []
@@ -204,8 +224,9 @@ def parse_answer(value: Any) -> dict[str, Any]:
         answer["discoverySources"].append({"id":identifier(source["id"],"discovery id"),"url":public_url(source["url"],"discovery url",True),"title":text(source["title"],"discovery title",1,300,True),"note":text(source["note"],"discovery note",1,500,True)})
     answer["sources"] = []
     for item in arr(raw["sources"], "sources", 0, 20):
-        source = obj(item, {"id","url","title","excerpt","retrievedAt","owner","appliesToCandidateIds"}, "source")
+        source = extended(item, {"id","url","title","excerpt","retrievedAt","owner","appliesToCandidateIds"}, {"offerId","scope"}, "source")
         answer["sources"].append({"id":identifier(source["id"],"source id"),"url":public_url(source["url"],"source url",True),"title":text(source["title"],"source title",1,300,True),"excerpt":text(source["excerpt"],"source excerpt",1,1200,True),"retrievedAt":date(source["retrievedAt"],"source date"),"owner":enum(source["owner"],{"candidate","platform","independent"},"source owner"),"appliesToCandidateIds":refs(source["appliesToCandidateIds"],"source candidate",5,1)})
+        scope_fields(source, answer["sources"][-1])
     answer["candidates"] = []
     for item in arr(raw["candidates"], "candidates", 0, 5):
         candidate = obj(item, {"id","name","kind","role","canonicalUrl","canonicalSourceId","relation","relationReason","userFactIds","claims","license","unknowns"}, "candidate")
@@ -214,8 +235,9 @@ def parse_answer(value: Any) -> dict[str, Any]:
         }
         parsed["claims"] = []
         for claim_item in arr(candidate["claims"], "claims", 0, 12):
-            claim = obj(claim_item, {"id","category","statement","sourceIds"}, "claim")
+            claim = extended(claim_item, {"id","category","statement","sourceIds"}, {"offerId","quote","scope"}, "claim")
             parsed["claims"].append({"id":identifier(claim["id"],"claim id"),"category":enum(claim["category"],CLAIM_CATEGORIES,"claim category"),"statement":text(claim["statement"],"claim statement",1,600,True),"sourceIds":refs(claim["sourceIds"],"claim source",4,1)})
+            scope_fields(claim, parsed["claims"][-1], True)
         license_raw = obj(candidate["license"], {"status","spdxId","sourceIds"}, "license")
         parsed["license"] = {"status":enum(license_raw["status"],{"documented","unknown","not_applicable"},"license status"),"spdxId":None if license_raw["spdxId"] is None else text(license_raw["spdxId"],"SPDX",1,64,True),"sourceIds":refs(license_raw["sourceIds"],"license source",4)}
         parsed["unknowns"] = []
@@ -231,10 +253,15 @@ def parse_answer(value: Any) -> dict[str, Any]:
     for item in arr(raw["excluded"], "excluded", 0, 12):
         excluded = obj(item, {"name","url","reason"}, "excluded candidate")
         answer["excluded"].append({"name":text(excluded["name"],"excluded name",1,200,True),"url":"" if excluded["url"]=="" else public_url(excluded["url"],"excluded URL",True),"reason":enum(excluded["reason"],{"identity_mismatch","no_canonical_source","license_unknown","unrelated","duplicate"},"excluded reason")})
-    commitment = obj(raw["commitment"], {"targetCandidateId","action","statement","userFactIds","claimIds","alternativeClaimIds","alternativeCandidateIds","currentMethodIds","unknownIds"}, "commitment")
+    commitment = extended(raw["commitment"], {"targetCandidateId","action","statement","userFactIds","claimIds","alternativeClaimIds","alternativeCandidateIds","currentMethodIds","unknownIds"}, {"offerId","nextAction","question"}, "commitment")
     answer["commitment"] = {
         "targetCandidateId":None if commitment["targetCandidateId"] is None else identifier(commitment["targetCandidateId"],"target"),"action":enum(commitment["action"],ACTIONS,"action"),"statement":text(commitment["statement"],"decision",1,800,True),"userFactIds":refs(commitment["userFactIds"],"decision fact",8),"claimIds":refs(commitment["claimIds"],"decision claim",12),"alternativeClaimIds":refs(commitment["alternativeClaimIds"],"alternative claim",12),"alternativeCandidateIds":refs(commitment["alternativeCandidateIds"],"alternative",5),"currentMethodIds":refs(commitment["currentMethodIds"],"current method",6),"unknownIds":refs(commitment["unknownIds"],"decision unknown",12),
     }
+    scope_fields(commitment, answer["commitment"])
+    if "nextAction" in commitment:
+        answer["commitment"]["nextAction"] = enum(commitment["nextAction"], set(POLICY["nextActionLabels"]), "next action")
+    if "question" in commitment:
+        answer["commitment"]["question"] = text(commitment["question"], "question", 1, 300, True)
     answer["limitations"] = [text(item,"limitation",1,500,True) for item in arr(raw["limitations"],"limitations",0,12)]
     return answer
 
@@ -242,9 +269,46 @@ def ensure_refs(values: list[str], allowed: set[str], message: str) -> None:
     if any(value not in allowed for value in values):
         raise ContractError(message)
 
+def validate_policy(answer):
+    decision = answer["commitment"]
+    claims = [claim for candidate in answer["candidates"] for claim in candidate["claims"]]
+    v3 = answer.get("policyVersion") == "candidate-policy-v3"
+    scoped = answer["sources"] + claims
+    if not v3 and any("scope" in item for item in scoped): raise ContractError("partial scope version")
+    if v3 and any(not item.get("scope") or (not item.get("offerId") if item["scope"] == "offer" else item.get("offerId") is not None) for item in scoped): raise ContractError("invalid explicit scope")
+    if "policyVersion" not in answer:
+        if any(key in decision for key in ("nextAction","offerId","question")) or any("offerId" in source for source in answer["sources"]) or any("offerId" in claim or "quote" in claim for claim in claims) or any(f["category"] == "trial_preference" for f in answer["userFacts"]):
+            raise ContractError("partial policy version")
+        return
+    next_action = decision.get("nextAction")
+    if "offerId" not in decision or next_action not in POLICY["nextActions"][decision["action"]]: raise ContractError("incompatible next action")
+    if (next_action == "ask_user") != ("question" in decision): raise ContractError("question action mismatch")
+    if next_action == "keep_current" and not decision["currentMethodIds"]: raise ContractError("keep requires current method")
+    sources = {source["id"]:source for source in answer["sources"]}
+    if any("offerId" not in source for source in answer["sources"]): raise ContractError("missing source scope")
+    for claim in claims:
+        if "offerId" not in claim or not claim.get("quote"): raise ContractError("missing claim scope")
+        for source_id in claim["sourceIds"]:
+            source = sources.get(source_id)
+            if not source or source["offerId"] != claim["offerId"] or (v3 and source["scope"] != claim["scope"]) or claim["quote"] not in source["excerpt"]: raise ContractError("offer or quote mismatch")
+    if decision["action"] in ACTIVE_ACTIONS:
+        if not decision["offerId"]: raise ContractError("active offer required")
+        common = {"identity","permission","data_handling","maintenance","process","requirement","ownership"}
+        for claim in claims:
+            if claim["id"] not in decision["claimIds"]: continue
+            if v3 and claim["scope"] == "unknown": raise ContractError("unknown active scope")
+            if not v3 and claim["category"] == "identity": continue
+            valid = ((claim["scope"] == "offer" and claim["offerId"] == decision["offerId"]) or (claim["scope"] == "product" and claim["category"] in common)) if v3 else claim["offerId"] == decision["offerId"]
+            if not valid: raise ContractError("active offer mismatch")
+    if next_action == "optional_trial" and not any(f["id"] in decision["userFactIds"] and f["category"] == "trial_preference" for f in answer["userFacts"]): raise ContractError("trial preference required")
+
 def validate_answer(input_value: dict[str, Any], raw: Any) -> dict[str, Any]:
-    answer = parse_answer(raw)
     packet = build_packet(input_value)
+    if isinstance(raw, dict) and raw.get("format") == "candidate-compact-v3":
+        try: raw = compact.expand(raw, packet)
+        except ValueError as exc: raise ContractError(str(exc)) from exc
+    answer = parse_answer(raw)
+    validate_policy(answer)
     if answer["id"] != packet["id"] or answer["inputHash"] != packet["inputHash"] or answer["asOf"] != input_value["asOf"]:
         raise ContractError("input binding mismatch")
     if any(source["retrievedAt"] != input_value["asOf"] for source in answer["sources"]):
@@ -329,7 +393,7 @@ def validate_answer(input_value: dict[str, Any], raw: Any) -> dict[str, Any]:
     return answer
 
 TITLES = {
-    "review_payment":"결제를 검토할 근거가 있습니다","trial_first":"무료 체험부터 확인하세요","hold_payment":"결제 조건을 더 확인해야 합니다","do_not_pay":"지금은 결제하지 않는 편이 낫습니다","request_proposal":"서면 제안서까지만 요청해 볼 수 있습니다","hold_contract":"계약 조건을 더 확인해야 합니다","research_hold":"공개 근거를 더 조사해야 합니다",
+    "review_payment":"결제를 검토할 근거가 있습니다","trial_first":"체험 조건을 확인하세요","hold_payment":"결제 조건을 더 확인해야 합니다","do_not_pay":"지금은 결제하지 않는 편이 낫습니다","request_proposal":"서면 제안서까지만 요청해 볼 수 있습니다","hold_contract":"계약 조건을 더 확인해야 합니다","research_hold":"공개 근거를 더 조사해야 합니다",
 }
 
 def render(answer: dict[str, Any]) -> dict[str, Any]:
@@ -339,13 +403,16 @@ def render(answer: dict[str, Any]) -> dict[str, Any]:
         candidates.append({**candidate,"claims":[{**claim,"sources":[sources[item] for item in claim["sourceIds"]],"sourceOwner":sources[claim["sourceIds"][0]]["owner"]} for claim in candidate["claims"]]})
     decision = answer["commitment"]
     target = next((item for item in candidates if item["id"]==decision["targetCandidateId"]),None)
+    legacy = "policyVersion" not in answer
+    next_action = "research_public" if legacy else decision["nextAction"]
     return {
-        "action":decision["action"],"title":TITLES[decision["action"]],"statement":decision["statement"],"status":answer["status"],"workstream":answer["workstream"],"target":target,
+        "legacy":legacy,"policyVersion":answer.get("policyVersion"),"nextAction":next_action,"nextActionText":POLICY["nextActionLabels"][next_action],"question":decision.get("question"),
+        "action":decision["action"],"title":"이전 답변의 조건을 다시 확인하세요" if legacy else TITLES[decision["action"]],"statement":decision["statement"],"status":answer["status"],"workstream":answer["workstream"],"target":target,
         "alternatives":[next(item for item in candidates if item["id"]==candidate_id) for candidate_id in decision["alternativeCandidateIds"]],
         "currentMethods":[next(item for item in answer["currentMethods"] if item["id"]==method_id) for method_id in decision["currentMethodIds"]],
         "unknowns":[] if target is None else [next(item for item in target["unknowns"] if item["id"]==unknown_id) for unknown_id in decision["unknownIds"]],
         "candidates":candidates,"sources":answer["sources"],"discoverySources":answer["discoverySources"],"excluded":answer["excluded"],"limitations":answer["limitations"],
-        "verificationNotice":"AI가 제시한 공개 출처의 형식과 연결을 검사했습니다. 원문 진위, 실제 효과, 계약 안전을 보장하지 않습니다.",
+        "verificationNotice":(POLICY["legacyNotice"] + " " if legacy else "") + POLICY["verificationNotice"],
     }
 
 def load() -> Any:
@@ -361,13 +428,18 @@ def main() -> int:
         payload = load()
         if sys.argv[1]=="prepare":
             input_value = validate_input(payload, True)
-            output = {"input":input_value,"packet":build_packet(input_value)}
+            packet = build_packet(input_value)
+            core_policy = "정책 버전: " + compact.POLICY["version"] + "\n" + "\n".join(compact.POLICY["rules"])
+            schema = json.loads(json.dumps(compact.SCHEMA))
+            schema["properties"]["requestKey"]["const"] = packet["inputHash"][:32]
+            prompt = core_policy + "\nJSON Schema:\n" + json.dumps(schema,ensure_ascii=False,separators=(",",":")) + "\n신뢰 입력:\n" + json.dumps(packet,ensure_ascii=False,separators=(",",":"))
+            output = {"input":input_value,"packet":packet,"policyVersion":compact.POLICY["version"],"corePolicy":core_policy,"prompt":prompt}
         else:
             exchange = obj(payload, {"input","reply"}, "exchange")
             input_value = parse_full_input(exchange["input"])
             reply = text(exchange["reply"],"reply",1,128000)
-            fence = re.fullmatch(r"\x60{3}(?:json)?\s*\n([\s\S]*?)\n\x60{3}",reply.strip(),re.I)
-            try: raw_answer = json.loads(fence.group(1) if fence else reply.strip())
+            fence = re.fullmatch(r"\x60{3}(?:json)?\s*\n([\s\S]*?)\n\x60{3}",compact.js_trim(reply),re.I)
+            try: raw_answer = json.loads(fence.group(1) if fence else compact.js_trim(reply))
             except Exception as exc: raise ContractError("invalid answer JSON") from exc
             answer = validate_answer(input_value, raw_answer)
             output = {"view":render(answer)}

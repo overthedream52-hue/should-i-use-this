@@ -1,0 +1,11 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Should I Use This · 내 발견함</title><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script></head><body><main>
+<header><p class="eyebrow">SHOULD I USE THIS / MAC WORKSPACE</p><h1>내 일에 도움이 될까?</h1><p>새 도구를 찾아 기록하고, 개선 제안은 내가 승인합니다. 외부 링크는 Aside 앱에서 열립니다.</p></header>
+<div id="message" role="status"></div>
+<section id="cassette-card" hidden aria-label="Cassette 조사 카드"></section>
+<section><h2>수집 범위</h2><p>공개 GitHub 저장소와 README 일부를 수집합니다. 검색 순위·별 개수는 추천 점수가 아닙니다.</p><label for="query">GitHub 검색 조건</label><div class="row"><input id="query" value="topic:mcp-server archived:false stars:&gt;100" maxlength="256"><button id="discover">후보 수집</button><button id="refresh" class="secondary">새로고침</button></div><p id="run"></p></section>
+<section><h2>내 업무 상황 <small>선택</small></h2><p>여기에 적은 내용과 공개 원문만 분석 에이전트에게 전달됩니다. 내 파일·계정은 자동 조사하지 않습니다.</p><label for="profile">현재 하는 일, 쓰는 방법, 불편한 점</label><textarea id="profile" maxlength="4000" placeholder="예: 영상 제작을 한다. 매번 자막을 수작업으로 고친다."></textarea><button id="save" class="secondary">상황 저장</button><p>상황을 바꾸면 새 분석이 필요하며 이전 승인은 더 이상 실행 대상으로 제공되지 않습니다.</p></section>
+<section><h2>웹 수집 참고자료</h2><p>기존 수집기가 가져온 공개 자료입니다. 일부 수집·차단·실패를 구분하며, 공식 제품 근거 확인과 추천 분석은 별도입니다.</p><div class="row"><button id="resolve-references">자료에서 후보 찾기</button><button id="retry-references" class="secondary">실패한 확인 재시도</button></div><p>명시된 GitHub 저장소를 한 번에 최대 5개 확인합니다. 제품 이름만 있거나 유료 서비스인 자료는 추가 조사 대상으로 남습니다.</p><p id="reference-counts"></p><div id="references"></div></section>
+<section><div class="row"><h2>발견·분석 기록</h2><span id="counts"></span></div><p>수집 → 구독 에이전트 분석 → 제안 → 내 승인. 설치나 결제는 자동으로 실행되지 않습니다.</p><div id="candidates"></div></section>
+<section id="approval-records"><h2>승인 요청과 기록</h2><p>범위·비용·검증 방법을 확인하세요. 승인은 아래 제안 범위에만 유효하며, 에이전트의 실제 작업 완료와는 다릅니다.</p><div id="proposals"></div></section>
+<section><h2>공유와 보존</h2><p id="storage"></p><p>다른 로컬 에이전트는 같은 저장소의 jobs / submit / approved 명령을 사용합니다. Google Sheets와 다른 기기 동기화는 아직 연결하지 않았습니다.</p><details><summary>수집 실행 이력</summary><pre id="history"></pre></details></section>
+</main></body></html>

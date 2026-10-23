@@ -13,23 +13,29 @@ const unknownLabels: Record<string, string> = {
 export default function CandidateReviewResult({ view }: { view: CandidateReviewView }) {
   return <>
     <h2>{view.title}</h2>
-    <p className="candidate-decision">{view.statement}</p>
+    <p className="candidate-decision">{view.nextActionText}</p>
+    {view.unknowns.length > 0 && <p className="transfer-note">미확인 항목: {[...new Set(view.unknowns.map(item => unknownLabels[item.category] ?? item.category))].join(' · ')}</p>}
+    <details className="result-evidence">
+      <summary>AI 판단 이유와 조건 보기 · 문장 의미는 미검증</summary>
+      {view.question && <p>{view.question}</p>}
+      <p>{view.statement}</p>
     {view.currentMethods.length > 0 && <section className="candidate-summary">
       <h3>현재 방법</h3>
       <ul>{view.currentMethods.map(method => <li key={method.id}>{method.statement}</li>)}</ul>
     </section>}
     {view.alternatives.length > 0 && <section className="candidate-summary">
-      <h3>무료·다른 대안</h3>
-      <ul>{view.alternatives.map(candidate => <li key={candidate.id}><strong>{candidate.name}</strong> · {candidate.relationReason}</li>)}</ul>
+      <h3>비교 대안</h3>
+      <ul>{view.alternatives.map(candidate => <li key={candidate.id}><strong>{candidate.name}</strong> · <span>{candidate.relationReason}</span></li>)}</ul>
     </section>}
     {view.unknowns.length > 0 && <section className="candidate-summary candidate-unknowns">
       <h3>결제·계약 전에 확인할 것</h3>
-      <ul>{view.unknowns.map(unknown => <li key={unknown.id}><strong>{unknownLabels[unknown.category] ?? unknown.category}</strong> · {unknown.statement}</li>)}</ul>
+      <ul>{view.unknowns.map(unknown => <li key={unknown.id}><strong>{unknownLabels[unknown.category] ?? unknown.category}</strong> · <span>{unknown.statement}</span></li>)}</ul>
     </section>}
     {view.limitations.length > 0 && <section className="candidate-summary">
       <h3>이번 판단의 한계</h3>
       <ul>{view.limitations.map((item, index) => <li key={index}>{item}</li>)}</ul>
     </section>}
+    </details>
     <details className="result-evidence">
       <summary>후보와 공개 근거 보기</summary>
       {view.candidates.map(candidate => <article className="candidate-item" key={candidate.id}>
@@ -41,7 +47,8 @@ export default function CandidateReviewResult({ view }: { view: CandidateReviewV
           <p>{claim.statement}</p>
           {claim.sources.map(source => <div className="candidate-source" key={source.id}>
             <blockquote>{source.excerpt}</blockquote>
-            <small>조회 {source.retrievedAt}</small>{' · '}
+            <small>{view.policyVersion === 'candidate-policy-v3' ? '요청 기준일' : '조회'} {source.retrievedAt}</small>
+            {source.scope && <small> · {source.scope === 'product' ? '제품 공통' : source.scope === 'offer' ? '요금제·경로: ' + source.offerId : '범위 미확인'}</small>}{' · '}
             <a href={source.url} target="_blank" rel="noreferrer">{source.title} 원문 열기</a>
           </div>)}
         </div>)}

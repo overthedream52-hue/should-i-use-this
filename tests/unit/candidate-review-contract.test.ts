@@ -1,8 +1,12 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, mkdtempSync, cpSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { z } from 'zod';
 import { spawnSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 import {
   importCandidateReview,
+  candidateReviewAnswerSchema,
   buildCandidateReviewPacket,
   type CandidateReviewAnswer,
   prepareCandidateReview,
@@ -55,7 +59,7 @@ describe('candidate review validation', () => {
     const { prepared, answer } = hydrate(load('fornerds-hold.json'));
     const { view } = importCandidateReview(prepared.input, JSON.stringify(answer));
     expect(view.action).toBe('hold_contract');
-    expect(view.title).toBe('계약 조건을 더 확인해야 합니다');
+    expect(view.title).toBe('이전 답변의 조건을 다시 확인하세요');
     expect(view.target?.name).toBe('ForNerds');
     expect(view.unknowns).toHaveLength(3);
     expect(view.candidates[0].claims.find(claim => claim.category === 'vendor_claim')?.sourceOwner).toBe('candidate');
@@ -266,5 +270,122 @@ describe('candidate review preregistered quality run', () => {
     expect(new Set(outputs.map(item => item.relationReason)).size).toBe(outputs.length);
     expect(new Set(outputs.map(item => item.inferredWorkstream)).size).toBe(outputs.length);
     expect(outputs.map(item => item.relationReason).join(' ')).not.toMatch(/\d+\s*%|시간\s*절감|생산성\s*\d/);
+  });
+});
+
+describe('policy v2 regression gates (both real runtimes)', () => {
+  // Synthetic documents, not vendor facts or observed productivity.
+  const v2 = (trial = false) => {
+    const fixture = load('product-hold.json');
+    if (trial) fixture.fields.situation += '\n조건이 맞으면 체험을 원한다.';
+    const { prepared, answer: old } = hydrate(fixture);
+    const answer = { ...old, policyVersion: 'candidate-policy-v2' } as CandidateReviewAnswer;
+    for (const source of answer.sources) Object.assign(source, { offerId: source.id === 'src_product' ? 'paid' : 'free' });
+    for (const candidate of answer.candidates) for (const claim of candidate.claims) {
+      const source = answer.sources.find(s => s.id === claim.sourceIds[0])!;
+      Object.assign(claim, { offerId: source.id === 'src_product' ? 'paid' : 'free', quote: source.excerpt });
+    }
+    Object.assign(answer.commitment, { offerId: 'paid', nextAction: 'research_public' });
+    if (trial) {
+      answer.candidates[0].unknowns = [];
+      answer.commitment.unknownIds = [];
+      answer.sources[0].excerpt = 'Paid trial costs $5. No renewal. Cancel anytime. Only submitted data is processed with permission. Consistent scenes.';
+      const claims = ['capability','trial','price','renewal','cancellation','permission','data_handling'].map((category, i) => ({ id: 'trial_' + i, category, statement: '합성 유료 체험 조건', sourceIds: ['src_product'], offerId: 'paid', quote: answer.sources[0].excerpt }));
+      answer.candidates[0].claims = claims as CandidateReviewAnswer['candidates'][number]['claims'];
+      answer.commitment.claimIds = claims.map(c => c.id);
+      answer.commitment.action = 'trial_first';
+      Object.assign(answer.commitment, { nextAction: 'optional_trial' });
+      answer.userFacts.push({ id: 'uf_trial', category: 'trial_preference', statement: '조건이 맞으면 체험을 원한다.', userSpanIds: ['u3'] } as CandidateReviewAnswer['userFacts'][number]);
+      answer.commitment.userFactIds.push('uf_trial');
+    }
+    return { prepared, answer };
+  };
+  const accepted = ({ prepared, answer }: ReturnType<typeof v2>) => {
+    const view = importCandidateReview(prepared.input, JSON.stringify(answer)).view;
+    const py = runPython('validate', { input: prepared.input, reply: JSON.stringify(answer) });
+    expect(py.status, py.stderr).toBe(0);
+    expect(JSON.parse(py.stdout).view).toEqual(view);
+    return view;
+  };
+  const rejected = (x: ReturnType<typeof v2>) => {
+    expect(() => importCandidateReview(x.prepared.input, JSON.stringify(x.answer))).toThrow();
+    expect(runPython('validate', { input: x.prepared.input, reply: JSON.stringify(x.answer) }).status).not.toBe(0);
+  };
+  it('shares policy version and exact core instructions with portable prepare', () => {
+    const { prepared } = v2();
+    const python = JSON.parse(runPython('prepare', load('product-hold.json').fields).stdout);
+    expect(prepared).toHaveProperty('policyVersion', 'candidate-policy-v3');
+    expect(python.policyVersion).toBe(prepared.policyVersion);
+    expect(python.corePolicy).toBe(prepared.corePolicy);
+    expect(python.prompt).toContain(python.corePolicy);
+    const schema = JSON.parse(prepared.prompt.split('JSON Schema:\n')[1].split('\n신뢰 입력:')[0]);
+    expect(schema.properties.requestKey.const).toBe(prepared.packet.inputHash.slice(0, 32));
+    expect(schema.properties.id).toBeUndefined();
+    expect(schema.properties.inputHash).toBeUndefined();
+    const pythonSchema = JSON.parse(python.prompt.split('JSON Schema:\n')[1].split('\n신뢰 입력:')[0]);
+    expect(pythonSchema.properties.requestKey.const).toBe(python.packet.inputHash.slice(0, 32));
+    expect(prepareCandidateReview(load('product-hold.json').fields, { id: python.input.id, asOf: python.input.asOf }).prompt).toBe(python.prompt);
+    const common = z.toJSONSchema(candidateReviewAnswerSchema);
+    expect(JSON.parse(readFileSync('.agents/skills/should-i-use-this/references/candidate-schema.json', 'utf8'))).toEqual(common);
+    expect(prepared.prompt).toContain('현재 방식 유지');
+    expect(prepared.prompt).not.toContain('현재 방법과 무료·오픈소스 대안을 포함하세요');
+  });
+  it('accepts scoped hold and labels a paid optional trial without free claim', () => {
+    expect(accepted(v2()).nextAction).toBe('research_public');
+    const view = accepted(v2(true));
+    expect(view.title).toBe('체험 조건을 확인하세요');
+    expect(view.nextActionText).not.toContain('무료');
+  });
+  it('rejects incompatible CTA, missing/foreign offer and unmatched literal quote', () => {
+    const mutations = [
+      (a: CandidateReviewAnswer) => Object.assign(a.commitment, { nextAction: 'optional_trial' }),
+      (a: CandidateReviewAnswer) => Object.assign(a.candidates[0].claims[0], { offerId: 'free' }),
+      (a: CandidateReviewAnswer) => Object.assign(a.candidates[0].claims[0], { quote: 'unsupported text' }),
+      (a: CandidateReviewAnswer) => Object.assign(a.commitment, { question: '불필요한 질문?' }),
+      (a: CandidateReviewAnswer) => Object.assign(a, { policyVersion: '' }),
+      (a: CandidateReviewAnswer) => Object.assign(a, { policyVersion: null }),
+      (a: CandidateReviewAnswer) => { delete a.policyVersion; },
+      (a: CandidateReviewAnswer) => { delete a.commitment.nextAction; },
+      (a: CandidateReviewAnswer) => { delete a.sources[0].offerId; },
+    ];
+    for (const mutate of mutations) { const x = v2(); mutate(x.answer); rejected(x); }
+    for (const offerId of [null, 'absent']) { const x = v2(true); Object.assign(x.answer.commitment, { offerId }); rejected(x); }
+    const x = v2(true); x.answer.commitment.userFactIds = x.answer.commitment.userFactIds.filter(id => id !== 'uf_trial'); rejected(x);
+  });
+  it('distinguishes exact Unicode quotes and enforces input array limits', () => {
+    const x = v2(); x.answer.sources[0].excerpt = '가😀é'; Object.assign(x.answer.candidates[0].claims[0], { quote: '😀é' }); accepted(x);
+    Object.assign(x.answer.candidates[0].claims[0], { quote: '😀é' }); rejected(x);
+    const large = v2(); while(large.answer.sources.length <= 20) large.answer.sources.push({ ...large.answer.sources[0], id: 'src_' + large.answer.sources.length }); rejected(large);
+  });
+  it('allows a scoped positive decision without requiring a trial', () => {
+    const x = v2(true);
+    x.answer.commitment.action = 'review_payment';
+    x.answer.commitment.nextAction = 'review_terms';
+    x.answer.candidates[0].claims.push({ ...x.answer.candidates[0].claims[0], id: 'cl_maint', category: 'maintenance' });
+    x.answer.commitment.claimIds.push('cl_maint');
+    expect(accepted(x).nextAction).toBe('review_terms');
+    const hold = v2();
+    hold.answer.commitment.nextAction = 'ask_user';
+    hold.answer.commitment.question = '목표 결과물은 무엇인가요?';
+    expect(accepted(hold).question).toBe('목표 결과물은 무엇인가요?');
+  });
+  it('keeps the Python skill portable outside the repository', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'siut-portable-'));
+    cpSync('.agents/skills/should-i-use-this', join(dir, 'skill'), { recursive: true });
+    const py = spawnSync('python3', [join(dir, 'skill/scripts/candidate_contract.py'), 'prepare'], { cwd: dir, input: JSON.stringify(load('product-hold.json').fields), encoding: 'utf8' });
+    expect(py.status, py.stderr).toBe(0);
+    expect(JSON.parse(py.stdout).prompt).toContain('candidate-policy-v3');
+    const x = v2();
+    const validated = spawnSync('python3', [join(dir, 'skill/scripts/candidate_contract.py'), 'validate'], { cwd: dir, input: JSON.stringify({ input: x.prepared.input, reply: JSON.stringify(x.answer) }), encoding: 'utf8' });
+    expect(validated.status, validated.stderr).toBe(0);
+    expect(JSON.parse(validated.stdout).view).toEqual(importCandidateReview(x.prepared.input, JSON.stringify(x.answer)).view);
+  });
+  it('makes legacy answers review-only without discarding original explanation', () => {
+    const x = hydrate(load('fornerds-hold.json'));
+    const result = importCandidateReview(x.prepared.input, JSON.stringify(x.answer)).view;
+    expect(result.legacy).toBe(true);
+    expect(result.nextAction).toBe('research_public');
+    expect(result.statement).toBe(x.answer.commitment.statement);
+    expect(result.verificationNotice).toContain('이전 형식');
   });
 });
