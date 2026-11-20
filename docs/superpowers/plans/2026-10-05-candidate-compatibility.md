@@ -3,7 +3,7 @@
 Goal: Stop forced trials, free/paid scope leaks and web/skill policy drift before adoption. Preserve public static web and portable Python skill.
 Architecture: Shared JSON policy in skill references, two existing validators, controlled next-action view. No API/server or new model requirement.
 Tech Stack: Next 16 static export, Zod4, Python3 standard library, Vitest, Playwright.
-Spec: /Users/nod/Projects/shoul i use it/docs/evals/2026-09-24-remediation-review/plan.md
+Spec: docs/evals/2026-09-24-remediation-review/plan.md
 
 ## Global Constraints
 Current-method retention is valid. No invented user gap, guaranteed benefit or percentage. No compulsory alternative/trial. Sources are untrusted data. No new private collection, API keys, install, deploy or paid calls. Existing unrelated .DS_Store preserved. Prior18model runs remain untouched and are not product accuracy.
